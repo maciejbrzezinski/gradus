@@ -10,7 +10,9 @@ lib/
 ├── app.dart                  # Main application widget
 ├── models/                   # Data models
 │   ├── block.dart            # Base block model
+│   ├── text_formatting.dart  # Text formatting options
 │   ├── block_types/          # Specific block type models
+│   │   ├── formatted_span.dart # Text span with formatting
 │   │   ├── text_block.dart
 │   │   ├── list_block.dart
 │   │   ├── todo_block.dart
@@ -135,12 +137,13 @@ abstract class Block {
 }
 ```
 
-### Text Block Model
+### Text Formatting
 
 ```dart
-// lib/models/block_types/text_block.dart
-import '../block.dart';
+// lib/models/text_formatting.dart
+import 'package:flutter/material.dart';
 
+/// Represents text formatting options
 class TextFormatting {
   final bool bold;
   final bool italic;
@@ -151,7 +154,7 @@ class TextFormatting {
   final String? fontFamily;
   final double? fontSize;
   
-  TextFormatting({
+  const TextFormatting({
     this.bold = false,
     this.italic = false,
     this.underline = false,
@@ -162,48 +165,288 @@ class TextFormatting {
     this.fontSize,
   });
   
+  /// Default formatting with no special styles
+  static const TextFormatting defaultFormatting = TextFormatting();
+  
+  /// Bold formatting
+  static const TextFormatting boldFormatting = TextFormatting(bold: true);
+  
+  /// Italic formatting
+  static const TextFormatting italicFormatting = TextFormatting(italic: true);
+  
+  /// Underline formatting
+  static const TextFormatting underlineFormatting = TextFormatting(underline: true);
+  
+  /// Strikethrough formatting
+  static const TextFormatting strikethroughFormatting = TextFormatting(strikethrough: true);
+  
+  /// Create formatting from JSON
+  factory TextFormatting.fromJson(Map<String, dynamic> json) {
+    return TextFormatting(
+      bold: json['bold'] as bool? ?? false,
+      italic: json['italic'] as bool? ?? false,
+      underline: json['underline'] as bool? ?? false,
+      strikethrough: json['strikethrough'] as bool? ?? false,
+      color: json['color'] as String?,
+      backgroundColor: json['backgroundColor'] as String?,
+      fontFamily: json['fontFamily'] as String?,
+      fontSize: json['fontSize'] as double?,
+    );
+  }
+  
+  /// Convert formatting to JSON for storage
   Map<String, dynamic> toJson() {
     return {
       'bold': bold,
       'italic': italic,
       'underline': underline,
       'strikethrough': strikethrough,
-      'color': color,
-      'backgroundColor': backgroundColor,
-      'fontFamily': fontFamily,
-      'fontSize': fontSize,
+      if (color != null) 'color': color,
+      if (backgroundColor != null) 'backgroundColor': backgroundColor,
+      if (fontFamily != null) 'fontFamily': fontFamily,
+      if (fontSize != null) 'fontSize': fontSize,
     };
   }
   
-  factory TextFormatting.fromJson(Map<String, dynamic> json) {
+  /// Create a copy of this formatting with updated properties
+  TextFormatting copyWith({
+    bool? bold,
+    bool? italic,
+    bool? underline,
+    bool? strikethrough,
+    String? color,
+    String? backgroundColor,
+    String? fontFamily,
+    double? fontSize,
+  }) {
     return TextFormatting(
-      bold: json['bold'] ?? false,
-      italic: json['italic'] ?? false,
-      underline: json['underline'] ?? false,
-      strikethrough: json['strikethrough'] ?? false,
-      color: json['color'],
-      backgroundColor: json['backgroundColor'],
-      fontFamily: json['fontFamily'],
-      fontSize: json['fontSize'],
+      bold: bold ?? this.bold,
+      italic: italic ?? this.italic,
+      underline: underline ?? this.underline,
+      strikethrough: strikethrough ?? this.strikethrough,
+      color: color ?? this.color,
+      backgroundColor: backgroundColor ?? this.backgroundColor,
+      fontFamily: fontFamily ?? this.fontFamily,
+      fontSize: fontSize ?? this.fontSize,
     );
   }
+  
+  /// Merge this formatting with another formatting
+  TextFormatting merge(TextFormatting other) {
+    return TextFormatting(
+      bold: other.bold || bold,
+      italic: other.italic || italic,
+      underline: other.underline || underline,
+      strikethrough: other.strikethrough || strikethrough,
+      color: other.color ?? color,
+      backgroundColor: other.backgroundColor ?? backgroundColor,
+      fontFamily: other.fontFamily ?? fontFamily,
+      fontSize: other.fontSize ?? fontSize,
+    );
+  }
+  
+  /// Toggle a specific formatting attribute
+  TextFormatting toggle(String attribute) {
+    switch (attribute) {
+      case 'bold':
+        return copyWith(bold: !bold);
+      case 'italic':
+        return copyWith(italic: !italic);
+      case 'underline':
+        return copyWith(underline: !underline);
+      case 'strikethrough':
+        return copyWith(strikethrough: !strikethrough);
+      default:
+        return this;
+    }
+  }
+  
+  /// Convert to TextStyle for rendering
+  TextStyle toTextStyle() {
+    return TextStyle(
+      fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+      fontStyle: italic ? FontStyle.italic : FontStyle.normal,
+      decoration: _getTextDecoration(),
+      decorationColor: color != null ? Color(int.parse(color!)) : null,
+      color: color != null ? Color(int.parse(color!)) : null,
+      backgroundColor: backgroundColor != null ? Color(int.parse(backgroundColor!)) : null,
+      fontFamily: fontFamily,
+      fontSize: fontSize,
+    );
+  }
+  
+  /// Get the text decoration based on formatting
+  TextDecoration _getTextDecoration() {
+    if (underline && strikethrough) {
+      return TextDecoration.combine([
+        TextDecoration.underline,
+        TextDecoration.lineThrough,
+      ]);
+    } else if (underline) {
+      return TextDecoration.underline;
+    } else if (strikethrough) {
+      return TextDecoration.lineThrough;
+    } else {
+      return TextDecoration.none;
+    }
+  }
+  
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TextFormatting &&
+        other.bold == bold &&
+        other.italic == italic &&
+        other.underline == underline &&
+        other.strikethrough == strikethrough &&
+        other.color == color &&
+        other.backgroundColor == backgroundColor &&
+        other.fontFamily == fontFamily &&
+        other.fontSize == fontSize;
+  }
+  
+  @override
+  int get hashCode =>
+      bold.hashCode ^
+      italic.hashCode ^
+      underline.hashCode ^
+      strikethrough.hashCode ^
+      color.hashCode ^
+      backgroundColor.hashCode ^
+      fontFamily.hashCode ^
+      fontSize.hashCode;
+  
+  @override
+  String toString() {
+    return 'TextFormatting(bold: $bold, italic: $italic, underline: $underline, strikethrough: $strikethrough)';
+  }
 }
+```
+
+### Formatted Span
+
+```dart
+// lib/models/block_types/formatted_span.dart
+import 'package:flutter/foundation.dart';
+import '../text_formatting.dart';
+
+/// Represents a span of text with specific formatting
+class FormattedSpan {
+  /// Starting index in the text (inclusive)
+  final int start;
+  
+  /// Ending index in the text (exclusive)
+  final int end;
+  
+  /// Formatting to apply to this span
+  final TextFormatting formatting;
+  
+  FormattedSpan({
+    required this.start,
+    required this.end,
+    required this.formatting,
+  }) : assert(start >= 0 && end >= start, 'Invalid span range');
+  
+  /// Create a span from JSON
+  factory FormattedSpan.fromJson(Map<String, dynamic> json) {
+    return FormattedSpan(
+      start: json['start'] as int,
+      end: json['end'] as int,
+      formatting: TextFormatting.fromJson(json['formatting'] as Map<String, dynamic>),
+    );
+  }
+  
+  /// Convert span to JSON for storage
+  Map<String, dynamic> toJson() {
+    return {
+      'start': start,
+      'end': end,
+      'formatting': formatting.toJson(),
+    };
+  }
+  
+  /// Create a copy of this span with updated properties
+  FormattedSpan copyWith({
+    int? start,
+    int? end,
+    TextFormatting? formatting,
+  }) {
+    return FormattedSpan(
+      start: start ?? this.start,
+      end: end ?? this.end,
+      formatting: formatting ?? this.formatting,
+    );
+  }
+  
+  /// Check if this span overlaps with another span
+  bool overlaps(FormattedSpan other) {
+    return (start < other.end && end > other.start);
+  }
+  
+  /// Check if this span contains a position
+  bool containsPosition(int position) {
+    return position >= start && position < end;
+  }
+  
+  /// Check if this span contains a range
+  bool containsRange(int rangeStart, int rangeEnd) {
+    return start <= rangeStart && end >= rangeEnd;
+  }
+  
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is FormattedSpan &&
+        other.start == start &&
+        other.end == end &&
+        other.formatting == formatting;
+  }
+  
+  @override
+  int get hashCode => start.hashCode ^ end.hashCode ^ formatting.hashCode;
+  
+  @override
+  String toString() => 'FormattedSpan(start: $start, end: $end, formatting: $formatting)';
+}
+```
+
+### Text Block Model
+
+```dart
+// lib/models/block_types/text_block.dart
+import '../block.dart';
+import '../text_formatting.dart';
+import 'formatted_span.dart';
 
 class TextBlock extends Block {
   String get textContent => content as String;
   set textContent(String value) => content = value;
   
-  TextFormatting get formatting => 
-    TextFormatting.fromJson(metadata['formatting'] ?? {});
-  set formatting(TextFormatting value) => 
-    metadata['formatting'] = value.toJson();
+  /// Default formatting for the entire block
+  TextFormatting get defaultFormatting => 
+    TextFormatting.fromJson(metadata['defaultFormatting'] ?? {});
+  set defaultFormatting(TextFormatting value) => 
+    metadata['defaultFormatting'] = value.toJson();
+  
+  /// List of formatted spans for partial text formatting
+  List<FormattedSpan> get formattedSpans => 
+    (metadata['formattedSpans'] as List?)
+        ?.map((span) => FormattedSpan.fromJson(span))
+        .toList() ?? [];
+  set formattedSpans(List<FormattedSpan> spans) => 
+    metadata['formattedSpans'] = spans.map((span) => span.toJson()).toList();
+  
+  /// Legacy getter for backward compatibility
+  TextFormatting get formatting => defaultFormatting;
+  set formatting(TextFormatting value) => defaultFormatting = value;
   
   TextBlock({
     String? id,
     String content = '',
     Map<String, dynamic>? metadata,
     List<Block>? children,
-    TextFormatting? formatting,
+    TextFormatting? defaultFormatting,
+    List<FormattedSpan>? formattedSpans,
   }) : super(
     id: id,
     type: BlockType.text,
@@ -211,9 +454,146 @@ class TextBlock extends Block {
     metadata: metadata ?? {},
     children: children,
   ) {
-    if (formatting != null) {
-      this.formatting = formatting;
+    if (defaultFormatting != null) {
+      this.defaultFormatting = defaultFormatting;
     }
+    if (formattedSpans != null) {
+      this.formattedSpans = formattedSpans;
+    }
+  }
+  
+  /// Apply formatting to a specific range of text
+  void applyFormatting(int start, int end, TextFormatting formatting) {
+    if (start < 0 || end > textContent.length || start >= end) {
+      return;
+    }
+    
+    final newSpan = FormattedSpan(
+      start: start,
+      end: end,
+      formatting: formatting,
+    );
+    
+    final spans = formattedSpans;
+    
+    // Remove or split existing spans that overlap with the new span
+    final updatedSpans = <FormattedSpan>[];
+    
+    for (final span in spans) {
+      if (!span.overlaps(newSpan)) {
+        // No overlap, keep the span as is
+        updatedSpans.add(span);
+      } else {
+        // Handle overlap by splitting or trimming the existing span
+        if (span.start < newSpan.start) {
+          // Add the part before the new span
+          updatedSpans.add(FormattedSpan(
+            start: span.start,
+            end: newSpan.start,
+            formatting: span.formatting,
+          ));
+        }
+        
+        if (span.end > newSpan.end) {
+          // Add the part after the new span
+          updatedSpans.add(FormattedSpan(
+            start: newSpan.end,
+            end: span.end,
+            formatting: span.formatting,
+          ));
+        }
+      }
+    }
+    
+    // Add the new span
+    updatedSpans.add(newSpan);
+    
+    // Sort spans by start position
+    updatedSpans.sort((a, b) => a.start.compareTo(b.start));
+    
+    // Update the spans
+    formattedSpans = updatedSpans;
+  }
+  
+  /// Get the formatting at a specific position in the text
+  TextFormatting getFormattingAt(int position) {
+    if (position < 0 || position >= textContent.length) {
+      return defaultFormatting;
+    }
+    
+    // Find all spans that contain the position
+    final spans = formattedSpans.where((span) => span.containsPosition(position)).toList();
+    
+    if (spans.isEmpty) {
+      return defaultFormatting;
+    }
+    
+    // Merge all applicable formatting
+    var result = defaultFormatting;
+    for (final span in spans) {
+      result = result.merge(span.formatting);
+    }
+    
+    return result;
+  }
+  
+  /// Convert the text content with spans to a list of TextSpans for rendering
+  List<InlineSpan> buildTextSpans() {
+    final text = textContent;
+    final spans = formattedSpans;
+    
+    if (spans.isEmpty) {
+      // If no spans, return the entire text with default formatting
+      return [
+        TextSpan(
+          text: text,
+          style: defaultFormatting.toTextStyle(),
+        ),
+      ];
+    }
+    
+    // Sort spans by start position
+    final sortedSpans = List<FormattedSpan>.from(spans)..sort((a, b) => a.start.compareTo(b.start));
+    
+    final result = <InlineSpan>[];
+    int currentIndex = 0;
+    
+    // Process each span
+    for (final span in sortedSpans) {
+      // Add text before the span with default formatting
+      if (span.start > currentIndex) {
+        result.add(
+          TextSpan(
+            text: text.substring(currentIndex, span.start),
+            style: defaultFormatting.toTextStyle(),
+          ),
+        );
+      }
+      
+      // Add the span text with its formatting
+      if (span.end > span.start) {
+        result.add(
+          TextSpan(
+            text: text.substring(span.start, span.end),
+            style: span.formatting.toTextStyle(),
+          ),
+        );
+      }
+      
+      currentIndex = span.end;
+    }
+    
+    // Add any remaining text with default formatting
+    if (currentIndex < text.length) {
+      result.add(
+        TextSpan(
+          text: text.substring(currentIndex),
+          style: defaultFormatting.toTextStyle(),
+        ),
+      );
+    }
+    
+    return result;
   }
   
   @override
@@ -649,6 +1029,7 @@ class TextBlockWidget extends BlockWidget {
 
 class TextBlockWidgetState extends BlockWidgetState<TextBlockWidget> {
   TextBlock get textBlock => widget.block as TextBlock;
+  TextSelection _selection = const TextSelection.collapsed(offset: 0);
   
   @override
   String getBlockContent() {
@@ -660,37 +1041,67 @@ class TextBlockWidgetState extends BlockWidgetState<TextBlockWidget> {
     widget.controller.updateBlockContent(widget.block.id, content);
   }
   
+  /// Update the text selection
+  void _updateSelection(TextSelection selection) {
+    setState(() {
+      _selection = selection;
+    });
+    
+    // Show formatting toolbar if text is selected
+    if (!selection.isCollapsed) {
+      widget.controller.showFormattingToolbar();
+    }
+  }
+  
+  /// Apply formatting to the selected text
+  void applyFormattingToSelection(TextFormatting formatting) {
+    if (!_selection.isCollapsed) {
+      final start = _selection.start;
+      final end = _selection.end;
+      
+      // Update the model
+      textBlock.applyFormatting(start, end, formatting);
+      
+      // Update the view
+      setState(() {});
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
-    final formatting = textBlock.formatting;
-    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: TextField(
-        controller: textController,
-        focusNode: widget.focusNode,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-        ),
-        style: TextStyle(
-          fontWeight: formatting.bold ? FontWeight.bold : FontWeight.normal,
-          fontStyle: formatting.italic ? FontStyle.italic : FontStyle.normal,
-          decoration: formatting.underline
-              ? TextDecoration.underline
-              : formatting.strikethrough
-                  ? TextDecoration.lineThrough
-                  : TextDecoration.none,
-          color: formatting.color != null ? Color(int.parse(formatting.color!)) : null,
-          backgroundColor: formatting.backgroundColor != null
-              ? Color(int.parse(formatting.backgroundColor!))
-              : null,
-          fontFamily: formatting.fontFamily,
-          fontSize: formatting.fontSize,
-        ),
-        maxLines: null,
-        keyboardType: TextInputType.multiline,
-        textCapitalization: TextCapitalization.sentences,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Use RichText for displaying formatted text when not editing
+          if (!widget.focusNode.hasFocus)
+            RichText(
+              text: TextSpan(
+                children: textBlock.buildTextSpans(),
+              ),
+              onTap: () {
+                widget.focusNode.requestFocus();
+              },
+            )
+          else
+            // Use TextField for editing
+            TextField(
+              controller: textController,
+              focusNode: widget.focusNode,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+              style: textBlock.defaultFormatting.toTextStyle(),
+              maxLines: null,
+              keyboardType: TextInputType.multiline,
+              textCapitalization: TextCapitalization.sentences,
+              onSelectionChanged: (selection, _) {
+                _updateSelection(selection);
+              },
+            ),
+        ],
       ),
     );
   }
