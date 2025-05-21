@@ -8,14 +8,32 @@ It combines a powerful rich-text editor, lightweight task management and an **en
 
 ## Key Strengths
 
-| 💪 Feature | 🚀 Gradus | ⚠️ Pain it solves |
-|-----------|-----------|-------------------|
-| **Endless timeline** | Scroll vertically through days & weeks; drop notes or todos anywhere in the flow | No more clicking into separate "pages" or databases—your past & future stay in one stream |
-| **Rich inline formatting** | Bold, italic, highlight, inline code, callouts, nested lists, slash-commands | Superlist's plain-text style can't capture nuance or structure |
-| **Inline images** | Paste or drag​&​drop ↔ see a live preview, pinch/drag to resize | Superlist forces a file download and won't let you shrink images in the editor |
-| **Tasks are first-class** | Type `[]` or hit `⏎` to turn any line into a checklist, add due-dates & reminders | Notion hides tasks behind databases; setup is clunky for quick todos |
-| **Offline-first** | Works underground, merges changes later without conflicts | Notion/Superlist need a live connection for most edits |
-| **Plugin architecture** | Blocks for diagrams, code blocks with syntax, Mermaid, LaTeX (roadmap) | Extensibility without bloated workspaces |
+### Seamless Organization & Flow
+
+| 💪 Feature | 🚀 What Gradus Offers | ⚠️ Pain it Solves |
+|-----------|----------------------|-------------------|
+| **Endless timeline** | Scroll vertically through days & weeks; drop notes or todos anywhere in the flow | Fragmented productivity where your content is scattered across multiple pages, requiring constant navigation and context switching |
+| **Projects** | Create projects to group notes & tasks, with dated tasks automatically appearing on the timeline | The struggle of balancing organization with quick access—either too rigid (folders) or too complex (databases) for everyday use |
+
+### Frictionless Task Management
+
+| 💪 Feature | 🚀 What Gradus Offers | ⚠️ Pain it Solves |
+|-----------|----------------------|-------------------|
+| **Tasks are first-class** | Type `[]` or hit `⏎` to turn any line into a checklist, add due-dates & reminders | The frustration of complex task setup processes that interrupt your flow and discourage quick task creation |
+
+### Rich Content Creation
+
+| 💪 Feature | 🚀 What Gradus Offers | ⚠️ Pain it Solves |
+|-----------|----------------------|-------------------|
+| **Rich inline formatting** | Bold, italic, highlight, inline code, callouts, nested lists, slash-commands | The limitations of plain-text that prevent proper emphasis, structure, and visual organization of your thoughts |
+| **Inline images** | Paste or drag​&​drop ↔ see a live preview, pinch/drag to resize | The disruption of your workflow when adding visual content requires multiple steps or downloads |
+
+### Reliability & Extensibility
+
+| 💪 Feature | 🚀 What Gradus Offers | ⚠️ Pain it Solves |
+|-----------|----------------------|-------------------|
+| **Offline-first** | Works underground, merges changes later without conflicts | The anxiety of losing work or being unable to access your notes when connectivity is limited or unavailable |
+| **Plugin architecture** | Blocks for diagrams, code blocks with syntax, Mermaid, LaTeX (roadmap) | The compromise between having too many features (bloat) or too few (limitation) for your specific needs |
 
 ---
 
