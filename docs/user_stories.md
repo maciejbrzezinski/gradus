@@ -12,6 +12,158 @@ Nazwa: Konfiguracja projektu Flutter z Clean Architecture
 
 Krótki opis: Skonfigurowanie projektu Flutter z odpowiednią strukturą katalogów zgodnie z Clean Architecture (presentation/domain/data layers) i wzorcem BLoC. Konfiguracja dependency injection z GetIt.
 
+**Szczegółowa struktura katalogów:**
+
+```
+lib/
+├── main.dart
+├── app/
+│   ├── app.dart                    # Główna aplikacja
+│   ├── router/                     # Routing i nawigacja
+│   └── theme/                      # Konfiguracja motywów
+├── core/
+│   ├── constants/                  # Stałe aplikacji
+│   ├── errors/                     # Definicje błędów
+│   ├── utils/                      # Narzędzia pomocnicze
+│   ├── extensions/                 # Rozszerzenia
+│   └── di/                         # Dependency Injection (GetIt)
+├── features/
+│   ├── authentication/             # Moduł autentykacji
+│   │   ├── data/
+│   │   │   ├── datasources/
+│   │   │   │   ├── auth_local_datasource.dart
+│   │   │   │   └── auth_remote_datasource.dart
+│   │   │   ├── models/
+│   │   │   │   └── user_model.dart
+│   │   │   └── repositories/
+│   │   │       └── auth_repository_impl.dart
+│   │   ├── domain/
+│   │   │   ├── entities/
+│   │   │   │   └── user.dart
+│   │   │   ├── repositories/
+│   │   │   │   └── auth_repository.dart
+│   │   │   └── usecases/
+│   │   │       ├── login_user.dart
+│   │   │       ├── logout_user.dart
+│   │   │       └── register_user.dart
+│   │   └── presentation/
+│   │       ├── bloc/
+│   │       │   └── auth_cubit.dart
+│   │       ├── pages/
+│   │       │   ├── login_page.dart
+│   │       │   ├── register_page.dart
+│   │       │   └── profile_page.dart
+│   │       └── widgets/
+│   │           └── auth_form.dart
+│   ├── documents/                  # Moduł dokumentów
+│   │   ├── data/
+│   │   │   ├── datasources/
+│   │   │   │   ├── document_local_datasource.dart
+│   │   │   │   └── document_remote_datasource.dart
+│   │   │   ├── models/
+│   │   │   │   ├── document_model.dart
+│   │   │   │   ├── timeline_document_model.dart
+│   │   │   │   └── project_document_model.dart
+│   │   │   └── repositories/
+│   │   │       └── document_repository_impl.dart
+│   │   ├── domain/
+│   │   │   ├── entities/
+│   │   │   │   ├── document.dart
+│   │   │   │   ├── timeline_document.dart
+│   │   │   │   └── project_document.dart
+│   │   │   ├── repositories/
+│   │   │   │   └── document_repository.dart
+│   │   │   └── usecases/
+│   │   │       ├── create_document.dart
+│   │   │       ├── update_document.dart
+│   │   │       ├── delete_document.dart
+│   │   │       └── get_document.dart
+│   │   └── presentation/
+│   │       ├── bloc/
+│   │       │   └── document_cubit.dart
+│   │       ├── pages/
+│   │       │   ├── timeline_page.dart
+│   │       │   └── project_page.dart
+│   │       └── widgets/
+│   │           ├── document_tile.dart
+│   │           └── day_tile.dart
+│   ├── blocks/                     # Moduł bloków
+│   │   ├── data/
+│   │   │   ├── datasources/
+│   │   │   │   ├── block_local_datasource.dart
+│   │   │   │   └── block_remote_datasource.dart
+│   │   │   ├── models/
+│   │   │   │   ├── block_model.dart
+│   │   │   │   ├── text_block_model.dart
+│   │   │   │   ├── todo_block_model.dart
+│   │   │   │   └── ...
+│   │   │   └── repositories/
+│   │   │       └── block_repository_impl.dart
+│   │   ├── domain/
+│   │   │   ├── entities/
+│   │   │   │   ├── block.dart
+│   │   │   │   ├── text_block.dart
+│   │   │   │   ├── todo_block.dart
+│   │   │   │   └── ...
+│   │   │   ├── repositories/
+│   │   │   │   └── block_repository.dart
+│   │   │   └── usecases/
+│   │   │       ├── create_block.dart
+│   │   │       ├── update_block.dart
+│   │   │       └── delete_block.dart
+│   │   └── presentation/
+│   │       ├── bloc/
+│   │       │   ├── block_cubit.dart
+│   │       │   └── command_palette_cubit.dart
+│   │       ├── widgets/
+│   │       │   ├── blocks/
+│   │       │   │   ├── text_block_widget.dart
+│   │       │   │   ├── todo_block_widget.dart
+│   │       │   │   ├── heading_block_widget.dart
+│   │       │   │   └── ...
+│   │       │   ├── editors/
+│   │       │   │   ├── custom_text_editor.dart
+│   │       │   │   └── formatting_toolbar.dart
+│   │       │   └── command_palette.dart
+│   │       └── rendering/
+│   │           ├── custom_render_object.dart
+│   │           ├── text_renderer.dart
+│   │           └── cursor_manager.dart
+│   └── synchronization/            # Moduł synchronizacji
+│       ├── data/
+│       │   ├── datasources/
+│       │   │   └── sync_remote_datasource.dart
+│       │   └── repositories/
+│       │       └── sync_repository_impl.dart
+│       ├── domain/
+│       │   ├── repositories/
+│       │   │   └── sync_repository.dart
+│       │   └── usecases/
+│       │       ├── sync_documents.dart
+│       │       └── sync_blocks.dart
+│       └── presentation/
+│           └── bloc/
+│               └── sync_cubit.dart
+├── shared/
+│   ├── models/                     # Modele współdzielone
+│   │   ├── text_formatting.dart
+│   │   └── block_types/
+│   │       └── formatted_span.dart
+│   ├── widgets/                    # Widgety współdzielone
+│   │   ├── loading_indicator.dart
+│   │   └── error_widget.dart
+│   ├── services/                   # Serwisy współdzielone
+│   │   ├── realtime_sync_service.dart
+│   │   ├── storage_service.dart
+│   │   └── cache_service.dart
+│   └── utils/                      # Narzędzia współdzielone
+│       ├── date_utils.dart
+│       └── text_utils.dart
+└── generated/                      # Automatycznie generowane pliki
+    ├── assets.gen.dart
+    └── l10n/
+```
+
 ---
 
 ### [US-002]
