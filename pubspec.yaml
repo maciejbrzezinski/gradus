@@ -36,6 +36,9 @@ dependencies:
   flutter_bloc: ^9.1.1
   equatable: ^2.0.7
   
+  # Code Generation for Models
+  json_annotation: ^4.9.0
+  
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -43,6 +46,11 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  # Code Generation
+  freezed: 3.0.6
+  json_serializable: ^6.9.5
+  build_runner: ^2.4.15
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

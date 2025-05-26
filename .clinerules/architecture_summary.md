@@ -142,6 +142,10 @@ Gradus follows Clean Architecture with BLoC pattern for state management, provid
 2. **Domain Layer** - Entities, Use Cases, and Repository Interfaces
 3. **Data Layer** - Repositories, Data Sources, and Models
 
+### Code Generation and Models
+
+The application uses **Freezed** for model generation
+
 ## Core Data Model
 
 The core data model uses blocks as fundamental building blocks of documents, with a base Document class and specialized variants:
