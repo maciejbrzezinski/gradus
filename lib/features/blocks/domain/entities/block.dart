@@ -1,21 +1,21 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'block.freezed.dart';
+part 'block.g.dart';
+
 /// Abstrakcyjna klasa Block - bazowa encja dla wszystkich bloków
 /// US-003: Abstrakcyjny model Block
-abstract class Block {
-  final String id;
-  final String type;
-  final dynamic content;
-  final Map<String, dynamic> metadata;
-  final List<Block> children;
-  final String? projectId; // nullable
-  final DateTime? date; // nullable
+@freezed
+abstract class Block with _$Block {
+  const factory Block({
+    required String id,
+    required String type,
+    required dynamic content,
+    required Map<String, dynamic> metadata,
+    required List<Block> children,
+    String? projectId, // nullable
+    DateTime? date, // nullable
+  }) = _Block;
 
-  const Block({
-    required this.id,
-    required this.type,
-    required this.content,
-    required this.metadata,
-    required this.children,
-    this.projectId,
-    this.date,
-  });
+  factory Block.fromJson(Map<String, dynamic> json) => _$BlockFromJson(json);
 }

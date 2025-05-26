@@ -1,19 +1,20 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'document.freezed.dart';
+part 'document.g.dart';
+
 /// Abstrakcyjna klasa Document - bazowa encja dla wszystkich dokumentów
 /// US-002: Abstrakcyjny model Document
-abstract class Document {
-  final String id;
-  final DateTime? date; // nullable dla projektów
-  final String? title; // dla projektów
-  final String? icon; // dla projektów
-  final String? iconColor; // dla projektów
-  final List<String> blocks; // uporządkowana lista ID bloków
+@freezed
+abstract class Document with _$Document {
+  const factory Document({
+    required String id,
+    DateTime? date, // nullable dla projektów
+    String? title, // dla projektów
+    String? icon, // dla projektów
+    String? iconColor, // dla projektów
+    required List<String> blocks, // uporządkowana lista ID bloków
+  }) = _Document;
 
-  const Document({
-    required this.id,
-    this.date,
-    this.title,
-    this.icon,
-    this.iconColor,
-    required this.blocks,
-  });
+  factory Document.fromJson(Map<String, dynamic> json) => _$DocumentFromJson(json);
 }
