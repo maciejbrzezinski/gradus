@@ -1,42 +1,42 @@
 import '../entities/document.dart';
 
-/// Repository interface dla operacji na dokumentach
+/// Repository interface for document operations
 /// US-004: Repository interfaces (Domain Layer)
 abstract class DocumentRepository {
-  /// Pobiera dokument po ID
+  /// Gets document by ID
   Future<Document?> getDocument(String id);
 
-  /// Pobiera wszystkie dokumenty
+  /// Gets all documents
   Future<List<Document>> getAllDocuments();
 
-  /// Pobiera dokument dla konkretnej daty (timeline)
+  /// Gets document for specific date (timeline)
   Future<Document?> getDocumentByDate(DateTime date);
 
-  /// Pobiera dokumenty w zakresie dat (lazy loading dla timeline)
+  /// Gets documents in date range (lazy loading for timeline)
   Future<List<Document>> getDocumentsByDateRange(
     DateTime startDate,
     DateTime endDate,
   );
 
-  /// Pobiera wszystkie dokumenty projektów
+  /// Gets all project documents
   Future<List<Document>> getProjectDocuments();
 
-  /// Pobiera dokumenty timeline dla konkretnego projektu w zakresie dat
+  /// Gets project timeline documents in date range
   Future<List<Document>> getProjectTimelineDocuments(
     String projectId,
     DateTime startDate,
     DateTime endDate,
   );
 
-  /// Tworzy nowy dokument
+  /// Creates new document
   Future<void> createDocument(Document document);
 
-  /// Aktualizuje istniejący dokument
+  /// Updates existing document
   Future<void> updateDocument(Document document);
 
-  /// Usuwa dokument
+  /// Deletes document
   Future<void> deleteDocument(String id);
 
-  /// Obserwuje zmiany w dokumentach (real-time updates)
+  /// Watches document changes (real-time updates)
   Stream<List<Document>> watchDocuments();
 }

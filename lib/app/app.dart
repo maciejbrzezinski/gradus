@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Główna aplikacja Gradus
-/// US-001: Konfiguracja projektu Flutter z Clean Architecture
+/// Main Gradus application
+/// US-001: Flutter project configuration with Clean Architecture
 class GradusApp extends StatelessWidget {
   const GradusApp({super.key});
 
@@ -12,11 +12,11 @@ class GradusApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2563EB), // Blue podobny do daily tasks
+          seedColor: const Color(0xFF2563EB),
           brightness: Brightness.light,
         ),
         useMaterial3: true,
-        fontFamily: 'Inter', // TODO: Dodać font w pubspec.yaml
+        fontFamily: 'Inter', // TODO: Add font to pubspec.yaml
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -32,7 +32,7 @@ class GradusApp extends StatelessWidget {
   }
 }
 
-/// Tymczasowa strona główna - zostanie zastąpiona Timeline/Project view
+/// Temporary home page - will be replaced by Timeline/Project view
 class GradusHomePage extends StatelessWidget {
   const GradusHomePage({super.key});
 

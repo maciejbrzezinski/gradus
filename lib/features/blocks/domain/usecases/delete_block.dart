@@ -1,29 +1,29 @@
 import '../repositories/block_repository.dart';
 
-/// Use Case do usuwania bloku
+/// Use Case for deleting block
 /// US-005: Use Cases (Domain Layer)
 class DeleteBlock {
   final BlockRepository repository;
 
   DeleteBlock(this.repository);
 
-  /// Usuwa blok z walidacją biznesową
+  /// Deletes block with business validation
   Future<void> call(String blockId) async {
-    // Walidacja biznesowa
+    // Business validation
     if (blockId.isEmpty) {
       throw ArgumentError('Block ID cannot be empty');
     }
 
-    // Sprawdzenie czy blok istnieje
+    // Check if block exists
     final existingBlock = await repository.getBlock(blockId);
     if (existingBlock == null) {
       throw StateError('Block with ID $blockId does not exist');
     }
 
-    // W przyszłości można dodać sprawdzenie czy blok nie ma dzieci
-    // lub automatyczne usuwanie powiązanych bloków potomnych
+    // In the future, can add check if block has no children
+    // or automatic deletion of related child blocks
 
-    // Usunięcie bloku
+    // Delete block
     await repository.deleteBlock(blockId);
   }
 }

@@ -1,25 +1,25 @@
 import 'package:get_it/get_it.dart';
 
-/// Service Locator dla Dependency Injection
-/// Konfiguracja GetIt zgodnie z Clean Architecture
+/// Service Locator for Dependency Injection
+/// GetIt configuration according to Clean Architecture
 final getIt = GetIt.instance;
 
-/// Inicjalizacja wszystkich zależności
+/// Initialize all dependencies
 Future<void> initializeDependencies() async {
-  // TODO: US-006 - Rejestracja wszystkich serwisów, repozytoriów, use cases i cubitów
+  // TODO: US-006 - Register all services, repositories, use cases and cubits
   
   // Core services
-  // TODO: Rejestracja core services
+  // TODO: Register core services
   
   // Data sources
-  // TODO: Rejestracja local i remote data sources
+  // TODO: Register local and remote data sources
   
   // Repositories
-  // TODO: Rejestracja repository implementations
+  // TODO: Register repository implementations
   
   // Use cases
-  // TODO: Rejestracja use cases
+  // TODO: Register use cases
   
   // BLoCs/Cubits
-  // TODO: Rejestracja cubitów i bloców
+  // TODO: Register cubits and blocs
 }

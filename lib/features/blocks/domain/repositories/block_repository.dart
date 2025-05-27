@@ -1,32 +1,32 @@
 import '../entities/block.dart';
 
-/// Repository interface dla operacji na blokach
+/// Repository interface for block operations
 /// US-004: Repository interfaces (Domain Layer)
 abstract class BlockRepository {
-  /// Pobiera blok po ID
+  /// Gets block by ID
   Future<Block?> getBlock(String id);
 
-  /// Pobiera wszystkie bloki dla konkretnego dokumentu
+  /// Gets all blocks for specific document
   Future<List<Block>> getBlocksByDocument(String documentId);
 
-  /// Pobiera bloki dla wielu dokumentów jednocześnie (batch loading)
-  /// Zwraca mapę: documentId -> lista bloków
+  /// Gets blocks for multiple documents at once (batch loading)
+  /// Returns map: documentId -> list of blocks
   Future<Map<String, List<Block>>> getBlocksByDocuments(
     List<String> documentIds,
   );
 
-  /// Tworzy nowy blok
+  /// Creates new block
   Future<void> createBlock(Block block);
 
-  /// Aktualizuje istniejący blok
+  /// Updates existing block
   Future<void> updateBlock(Block block);
 
-  /// Usuwa blok
+  /// Deletes block
   Future<void> deleteBlock(String id);
 
-  /// Zmienia kolejność bloków w dokumencie (drag & drop)
+  /// Changes block order in document (drag & drop)
   Future<void> reorderBlocks(String documentId, List<String> blockIds);
 
-  /// Obserwuje zmiany bloków w konkretnym dokumencie (real-time updates)
+  /// Watches block changes in specific document (real-time updates)
   Stream<List<Block>> watchBlocksByDocument(String documentId);
 }

@@ -3,8 +3,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'block.freezed.dart';
 part 'block.g.dart';
 
-/// Abstrakcyjna klasa Block - bazowa encja dla wszystkich bloków
-/// US-003: Abstrakcyjny model Block
+/// Abstract Block class - base entity for all blocks
+/// US-003: Abstract Block model
 @freezed
 abstract class Block with _$Block {
   const factory Block({

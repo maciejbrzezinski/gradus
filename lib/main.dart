@@ -6,7 +6,7 @@ import 'core/di/service_locator.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Inicjalizacja Dependency Injection
+  // Initialize Dependency Injection
   await initializeDependencies();
   
   runApp(const GradusApp());
