@@ -198,7 +198,7 @@ Krótki opis: Implementacja interfaces dla DocumentRepository i BlockRepository 
 
 ### [US-005]
 
-[ ] Status
+[x] Status
 
 Nazwa: Use Cases (Domain Layer)
 
