@@ -21,14 +21,9 @@ class UpdateDocument {
       throw StateError('Document with ID ${document.id} does not exist');
     }
 
-    // Validation for timeline vs project documents
-    if (document.date != null && document.title != null) {
-      throw ArgumentError('Document cannot be both timeline (date) and project (title) at the same time');
-    }
-
     // Validation for project documents (must have title)
     if (document.date == null && document.title == null) {
-      throw ArgumentError('Document must be either timeline (with date) or project (with title)');
+      throw ArgumentError('Document must be either timeline (with date) or project (with title) or both');
     }
 
     // Update document
