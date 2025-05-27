@@ -6,7 +6,7 @@ Ten dokument zawiera listę historyjek użytkownika dla aplikacji Gradus, ułoż
 
 ### [US-001]
 
-[ ] Status
+[x] Status
 
 Nazwa: Konfiguracja projektu Flutter z Clean Architecture
 
@@ -168,7 +168,7 @@ lib/
 
 ### [US-002]
 
-[ ] Status
+[x] Status
 
 Nazwa: Abstrakcyjny model Document
 
@@ -178,7 +178,7 @@ Krótki opis: Implementacja abstrakcyjnej klasy Document z właściwościami: id
 
 ### [US-003]
 
-[ ] Status
+[x] Status
 
 Nazwa: Abstrakcyjny model Block
 
@@ -188,7 +188,7 @@ Krótki opis: Implementacja abstrakcyjnego modelu Block z właściwościami: id,
 
 ### [US-004]
 
-[ ] Status
+[x] Status
 
 Nazwa: Repository interfaces (Domain Layer)
 
