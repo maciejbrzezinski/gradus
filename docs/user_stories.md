@@ -208,7 +208,7 @@ Krótki opis: Implementacja podstawowych Use Cases: CreateDocument, UpdateDocume
 
 ### [US-006]
 
-[ ] Status
+[x] Status
 
 Nazwa: Dependency Injection setup
 
@@ -228,7 +228,7 @@ Krótki opis: Konfiguracja SQLite jako głównej bazy danych z Brick jako ORM. U
 
 ### [US-008]
 
-[ ] Status
+[x] Status
 
 Nazwa: Local Data Sources
 
@@ -238,7 +238,7 @@ Krótki opis: Implementacja LocalDocumentDataSource i LocalBlockDataSource w dat
 
 ### [US-009]
 
-[ ] Status
+[x] Status
 
 Nazwa: Repository implementations (Data Layer)
 
@@ -248,7 +248,7 @@ Krótki opis: Implementacja DocumentRepositoryImpl i BlockRepositoryImpl w data 
 
 ### [US-010]
 
-[ ] Status
+[x] Status
 
 Nazwa: Memory cache dla lokalnych danych
 
