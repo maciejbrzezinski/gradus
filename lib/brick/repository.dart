@@ -1,6 +1,5 @@
 import 'package:brick_offline_first_with_supabase/brick_offline_first_with_supabase.dart';
 import 'package:brick_sqlite/brick_sqlite.dart';
-import 'package:brick_sqlite/memory_cache_provider.dart';
 // This hide is for Brick's @Supabase annotation; in most cases,
 // supabase_flutter **will not** be imported in application code.
 import 'package:brick_supabase/brick_supabase.dart' hide Supabase;
@@ -56,6 +55,6 @@ class Repository extends OfflineFirstWithSupabaseRepository {
       migrations: migrations,
       offlineRequestQueue: queue,
       memoryCacheProvider: MemoryCacheProvider(),
-    );
+    )
   }
 }
