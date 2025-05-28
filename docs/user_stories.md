@@ -218,7 +218,7 @@ Krótki opis: Konfiguracja GetIt dla dependency injection, rejestracja wszystkic
 
 ### [US-007]
 
-[ ] Status
+[x] Status
 
 Nazwa: Konfiguracja SQLite z Brick
 
@@ -798,15 +798,6 @@ Krótki opis: Enhancement existing repository implementations o remote data sour
 
 ---
 
-### [US-065]
-
-[ ] Status
-
-Nazwa: Brick Offline Queue Configuration
-
-Krótki opis: Konfiguracja wbudowanego systemu offline queue w Brick podczas inicjalizacji Repository. Brick automatycznie kolejkuje operacje podczas braku połączenia i wykonuje je po przywróceniu łączności bez dodatkowej implementacji.
-
----
 
 ### [US-066]
 

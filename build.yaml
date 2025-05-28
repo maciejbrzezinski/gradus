@@ -1,0 +1,9 @@
+targets:
+  $default:
+    builders:
+      brick_offline_first_with_supabase_build|offline_first_with_supabase:
+        generate_for:
+          - lib/features/*/data/models/*.model.dart
+        options:
+          # Generate brick.g.dart file containing model dictionaries
+          super_glob: lib/brick/brick.g.dart

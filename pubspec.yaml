@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.6.1
+  sdk: ^3.7.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -40,6 +40,17 @@ dependencies:
   json_annotation: ^4.9.0
   freezed_annotation: ^3.0.0
   
+  # Brick - Offline-First with Supabase
+  brick_offline_first_with_supabase: ^2.0.0
+  brick_offline_first: ^4.0.0
+  brick_core: ^2.0.0
+  brick_sqlite: ^4.0.2
+  brick_supabase: ^2.0.0
+  sqflite: ^2.4.2
+  sqflite_common: ^2.5.4+6
+  uuid: ^4.5.1
+  supabase_flutter: ^2.9.0
+  
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -52,6 +63,9 @@ dev_dependencies:
   freezed: 3.0.6
   json_serializable: ^6.9.5
   build_runner: ^2.4.15
+  
+  # Brick Code Generation
+  brick_offline_first_with_supabase_build: ^2.0.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
