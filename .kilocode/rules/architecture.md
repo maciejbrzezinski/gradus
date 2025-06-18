@@ -210,24 +210,13 @@ class TasksCubit extends Cubit<TasksState> {
 
 Using GetIt with Injectable for DI:
 ```dart
-@module
-abstract class RegisterModule {
-  // Core
-  @lazySingleton
-  NetworkInfo get networkInfo => NetworkInfoImpl();
-}
-
 // Repositories
 @LazySingleton(as: TasksRepository)
 class TasksRepositoryImpl implements TasksRepository {
-  final TasksLocalDataSource localDataSource;
-  final TasksRemoteDataSource remoteDataSource;
-  final NetworkInfo networkInfo;
+  final TasksDataSource tasksDataSource;
   
   TasksRepositoryImpl({
-    required this.localDataSource,
-    required this.remoteDataSource,
-    required this.networkInfo,
+    required this.tasksDataSource,
   });
 }
 
@@ -249,36 +238,6 @@ class TasksCubit extends Cubit<TasksState> {
     required this.createTaskUseCase,
   }) : super(const TasksInitial());
 }
-```
-
-## Implementation Guidelines
-
-1. **Always use Either for error handling**
-2. **Repositories expose streams for real-time updates**
-3. **Cubits listen to streams and emit states**
-4. **Offline-first - local data as truth**
-5. **Testing on every layer**
-6. **Dependency Injection with GetIt and Injectable**
-7. **Immutable entities and models with Freezed**
-8. **Proper error handling with custom Failures**
-9. **Day entity manages sorting through itemIds order**
-10. **Use Freezed for all data models and states**
-11. **Generate code with build_runner for Freezed and Injectable**
-
-## Code Generation
-
-Required dependencies for code generation:
-```yaml
-dependencies:
-  freezed_annotation: ^2.4.1
-  json_annotation: ^4.8.1
-  injectable: ^2.3.2
-
-dev_dependencies:
-  freezed: ^2.4.7
-  json_serializable: ^6.7.1
-  build_runner: ^2.4.7
-  injectable_generator: ^2.4.1
 ```
 
 Run code generation:
