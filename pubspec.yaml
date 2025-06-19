@@ -19,7 +19,7 @@ dependencies:
   get_it: ^8.0.3
   injectable: ^2.5.0
   # Code Generation
-  freezed_annotation: ^3.0.0
+  freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
   # Firebase
   firebase_core: ^3.14.0
@@ -28,6 +28,7 @@ dependencies:
   # Utils
   uuid: ^4.5.1
   equatable: ^2.0.7
+  intl: ^0.19.0
 
 dev_dependencies:
   flutter_test:
@@ -35,7 +36,7 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   
   # Code Generation
-  freezed: ^3.0.6
+  freezed: ^2.5.8
   json_serializable: ^6.9.5
   build_runner: ^2.5.2
   injectable_generator: ^2.7.0
