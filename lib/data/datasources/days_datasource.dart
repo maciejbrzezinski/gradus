@@ -2,94 +2,67 @@ import 'dart:async';
 
 import 'package:injectable/injectable.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/day.dart';
+import '../../core/services/auth_service.dart';
 
 @injectable
 class DaysDataSource {
-  // Mock data storage - in real implementation this would be Firestore
-  final Map<String, Map<String, dynamic>> _days = {};
-  final StreamController<Map<String, Map<String, dynamic>>> _daysController =
-      StreamController<Map<String, Map<String, dynamic>>>.broadcast();
+  final FirebaseFirestore _firestore;
+  final AuthService _authService;
 
-  DaysDataSource() {
-    _initializeMockData();
-  }
+  DaysDataSource(this._firestore, this._authService);
 
-  void _initializeMockData() {
-    // Initialize with some mock data
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+  String get _userId => _authService.currentUserId;
 
-    // Generate mock days for 15 days with item IDs
-    for (int i = -7; i <= 7; i++) {
-      final date = today.add(Duration(days: i));
-      _generateDayForDate(date);
-    }
-
-    _daysController.add(Map.from(_days));
-  }
-
-  void _generateDayForDate(DateTime date) {
-    final dayOfWeek = date.weekday;
-
-    // Create days for both projects with appropriate item IDs
-    final workItemIds = <String>[];
-    final personalItemIds = <String>[];
-
-    // Generate item IDs based on day of week (matching the timeline items data source)
-    if (dayOfWeek <= 5) {
-      // Weekdays
-      workItemIds.add('task_${date.millisecondsSinceEpoch}_1');
-      personalItemIds.add('task_${date.millisecondsSinceEpoch}_2');
-    }
-
-    if (dayOfWeek == 1) {
-      // Monday
-      workItemIds.addAll(['note_${date.millisecondsSinceEpoch}_1', 'note_${date.millisecondsSinceEpoch}_2']);
-    }
-
-    // Create days for both projects
-    final workDayId = _getDayDocId(date, 'work-project-id');
-    _days[workDayId] = {'date': date.toIso8601String(), 'projectId': 'work-project-id', 'itemIds': workItemIds};
-
-    final personalDayId = _getDayDocId(date, 'personal-project-id');
-    _days[personalDayId] = {
-      'date': date.toIso8601String(),
-      'projectId': 'personal-project-id',
-      'itemIds': personalItemIds,
-    };
-  }
+  CollectionReference get _daysCollection => 
+    _firestore.collection('users').doc(_userId).collection('days');
 
   Stream<List<Day>> watchDays({required String projectId, required DateTime startDate, required DateTime endDate}) {
-    return _daysController.stream.map((daysData) {
-      final filteredDays = <Day>[];
-
+    return _daysCollection
+        .where('projectId', isEqualTo: projectId)
+        .where('date', isGreaterThanOrEqualTo: startDate.toIso8601String())
+        .where('date', isLessThanOrEqualTo: endDate.toIso8601String())
+        .snapshots()
+        .map((snapshot) {
+      final existingDays = <String, Day>{};
+      
+      // Map existing days from Firestore
+      for (final doc in snapshot.docs) {
+        final day = _mapDocToDay(doc);
+        final dayKey = _getDayDocId(day.date, day.projectId);
+        existingDays[dayKey] = day;
+      }
+      
+      // Generate complete list including empty days
+      final allDays = <Day>[];
       for (
         DateTime date = startDate;
         date.isBefore(endDate.add(Duration(days: 1)));
         date = date.add(Duration(days: 1))
       ) {
-        final dayId = _getDayDocId(date, projectId);
-        final dayData = daysData[dayId];
-
-        if (dayData != null) {
-          filteredDays.add(_mapDataToDay(dayData));
+        final dayKey = _getDayDocId(date, projectId);
+        final existingDay = existingDays[dayKey];
+        
+        if (existingDay != null) {
+          allDays.add(existingDay);
         } else {
           // Create empty day if not exists
-          filteredDays.add(Day(date: date, projectId: projectId, itemIds: []));
+          allDays.add(Day(date: date, projectId: projectId, itemIds: []));
         }
       }
-
-      return filteredDays;
+      
+      return allDays;
     });
   }
 
   Future<Day> updateDay(Day day) async {
     final dayId = _getDayDocId(day.date, day.projectId);
-    _days[dayId] = _mapDayToData(day);
-    _daysController.add(Map.from(_days));
-    return day; // Return the updated day
+    final dayData = _mapDayToData(day);
+    
+    await _daysCollection.doc(dayId).set(dayData);
+    return day;
   }
 
   Future<void> moveItemBetweenDays({
@@ -120,6 +93,11 @@ class DaysDataSource {
     );
   }
 
+  Day _mapDocToDay(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return _mapDataToDay(data);
+  }
+
   Map<String, dynamic> _mapDayToData(Day day) {
     return {'date': day.date.toIso8601String(), 'projectId': day.projectId, 'itemIds': day.itemIds};
   }
@@ -129,29 +107,40 @@ class DaysDataSource {
     return '${projectId}_$dateStr';
   }
 
-  void dispose() {
-    _daysController.close();
-  }
-
   Future<List<Day>> getDays({required String projectId, required DateTime startDate, required DateTime endDate}) async {
-    final filteredDays = <Day>[];
+    final snapshot = await _daysCollection
+        .where('projectId', isEqualTo: projectId)
+        .where('date', isGreaterThanOrEqualTo: startDate.toIso8601String())
+        .where('date', isLessThanOrEqualTo: endDate.toIso8601String())
+        .get();
 
+    final existingDays = <String, Day>{};
+    
+    // Map existing days from Firestore
+    for (final doc in snapshot.docs) {
+      final day = _mapDocToDay(doc);
+      final dayKey = _getDayDocId(day.date, day.projectId);
+      existingDays[dayKey] = day;
+    }
+    
+    // Generate complete list including empty days
+    final allDays = <Day>[];
     for (
-    DateTime date = startDate;
-    date.isBefore(endDate.add(Duration(days: 1)));
-    date = date.add(Duration(days: 1))
+      DateTime date = startDate;
+      date.isBefore(endDate.add(Duration(days: 1)));
+      date = date.add(Duration(days: 1))
     ) {
-      final dayId = _getDayDocId(date, projectId);
-      final dayData = _days[dayId];
-
-      if (dayData != null) {
-        filteredDays.add(_mapDataToDay(dayData));
+      final dayKey = _getDayDocId(date, projectId);
+      final existingDay = existingDays[dayKey];
+      
+      if (existingDay != null) {
+        allDays.add(existingDay);
       } else {
         // Create empty day if not exists
-        filteredDays.add(Day(date: date, projectId: projectId, itemIds: []));
+        allDays.add(Day(date: date, projectId: projectId, itemIds: []));
       }
     }
-
-    return filteredDays;
+    
+    return allDays;
   }
 }

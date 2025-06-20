@@ -1,132 +1,62 @@
 import 'dart:async';
 
 import 'package:injectable/injectable.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/timeline_item.dart';
 import '../../domain/entities/task.dart';
 import '../../domain/entities/note.dart';
 import '../../domain/entities/note_type.dart';
+import '../../core/services/auth_service.dart';
 
 @injectable
 class TimelineItemsDataSource {
-  // Mock data storage - in real implementation this would be Firestore
-  final Map<String, Map<String, dynamic>> _items = {};
-  final StreamController<Map<String, Map<String, dynamic>>> _itemsController = 
-      StreamController<Map<String, Map<String, dynamic>>>.broadcast();
+  final FirebaseFirestore _firestore;
+  final AuthService _authService;
 
-  TimelineItemsDataSource() {
-    _initializeMockData();
-  }
+  TimelineItemsDataSource(this._firestore, this._authService);
 
-  void _initializeMockData() {
-    // Initialize with some mock data that matches the existing hardcoded data
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    
-    // Generate mock timeline items for 15 days
-    for (int i = -7; i <= 7; i++) {
-      final date = today.add(Duration(days: i));
-      _generateItemsForDay(date);
-    }
-    
-    _itemsController.add(Map.from(_items));
-  }
+  String get _userId => _authService.currentUserId;
 
-  void _generateItemsForDay(DateTime date) {
-    final now = DateTime.now();
-    final dayOfWeek = date.weekday;
-    
-    // Generate tasks
-    if (dayOfWeek <= 5) { // Weekdays
-      final taskId1 = 'task_${date.millisecondsSinceEpoch}_1';
-      _items[taskId1] = {
-        'id': taskId1,
-        'type': 'task',
-        'projectId': 'work-project-id',
-        'createdAt': now.subtract(Duration(days: 1)).toIso8601String(),
-        'updatedAt': now.subtract(Duration(days: 1)).toIso8601String(),
-        'title': 'Daily standup meeting',
-        'isCompleted': date.isBefore(DateTime.now()),
-        'date': date.toIso8601String(),
-        'description': 'Team synchronization meeting',
-      };
-
-      final taskId2 = 'task_${date.millisecondsSinceEpoch}_2';
-      _items[taskId2] = {
-        'id': taskId2,
-        'type': 'task',
-        'projectId': 'personal-project-id',
-        'createdAt': now.subtract(Duration(days: 1)).toIso8601String(),
-        'updatedAt': now.subtract(Duration(days: 1)).toIso8601String(),
-        'title': 'Morning workout',
-        'isCompleted': date.isBefore(DateTime.now()) && date.weekday % 2 == 0,
-        'date': date.toIso8601String(),
-        'description': '30 minutes cardio exercise',
-      };
-    }
-    
-    // Generate notes
-    if (dayOfWeek == 1) { // Monday
-      final noteId1 = 'note_${date.millisecondsSinceEpoch}_1';
-      _items[noteId1] = {
-        'id': noteId1,
-        'type': 'note',
-        'projectId': 'work-project-id',
-        'createdAt': now.subtract(Duration(days: 1)).toIso8601String(),
-        'updatedAt': now.subtract(Duration(days: 1)).toIso8601String(),
-        'content': 'Weekly Goals',
-        'noteType': 'headline1',
-      };
-
-      final noteId2 = 'note_${date.millisecondsSinceEpoch}_2';
-      _items[noteId2] = {
-        'id': noteId2,
-        'type': 'note',
-        'projectId': 'work-project-id',
-        'createdAt': now.subtract(Duration(days: 1)).toIso8601String(),
-        'updatedAt': now.subtract(Duration(days: 1)).toIso8601String(),
-        'content': 'Focus on completing the new feature implementation.',
-        'noteType': 'text',
-      };
-    }
-  }
+  CollectionReference get _timelineItemsCollection => 
+    _firestore.collection('users').doc(_userId).collection('timeline_items');
 
   Stream<TimelineItem> watchTimelineItem(String itemId) {
-    return _itemsController.stream
-        .map((items) => items[itemId])
-        .where((item) => item != null)
-        .map((item) => _mapDataToTimelineItem(item!));
+    return _timelineItemsCollection
+        .doc(itemId)
+        .snapshots()
+        .where((doc) => doc.exists)
+        .map((doc) => _mapDocToTimelineItem(doc));
   }
 
   Future<TimelineItem> getTimelineItem(String itemId) async {
-    final item = _items[itemId];
-    if (item == null) {
+    final doc = await _timelineItemsCollection.doc(itemId).get();
+    if (!doc.exists) {
       throw Exception('Timeline item not found: $itemId');
     }
-    return _mapDataToTimelineItem(item);
+    return _mapDocToTimelineItem(doc);
   }
 
   Future<void> createTimelineItem(TimelineItem item) async {
     final data = _mapTimelineItemToData(item);
-    _items[item.id] = data;
-    _itemsController.add(Map.from(_items));
+    await _timelineItemsCollection.doc(item.id).set(data);
   }
 
   Future<void> updateTimelineItem(TimelineItem item) async {
-    if (!_items.containsKey(item.id)) {
+    final doc = await _timelineItemsCollection.doc(item.id).get();
+    if (!doc.exists) {
       throw Exception('Timeline item not found: ${item.id}');
     }
     final data = _mapTimelineItemToData(item);
-    _items[item.id] = data;
-    _itemsController.add(Map.from(_items));
+    await _timelineItemsCollection.doc(item.id).update(data);
   }
 
   Future<void> deleteTimelineItem(String itemId) async {
-    if (!_items.containsKey(itemId)) {
+    final doc = await _timelineItemsCollection.doc(itemId).get();
+    if (!doc.exists) {
       throw Exception('Timeline item not found: $itemId');
     }
-    _items.remove(itemId);
-    _itemsController.add(Map.from(_items));
+    await _timelineItemsCollection.doc(itemId).delete();
   }
 
   TimelineItem _mapDataToTimelineItem(Map<String, dynamic> data) {
@@ -155,6 +85,11 @@ class TimelineItemsDataSource {
       default:
         throw Exception('Unknown timeline item type: $type');
     }
+  }
+
+  TimelineItem _mapDocToTimelineItem(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return _mapDataToTimelineItem(data);
   }
 
   Map<String, dynamic> _mapTimelineItemToData(TimelineItem item) {
@@ -193,7 +128,4 @@ class TimelineItemsDataSource {
     }
   }
 
-  void dispose() {
-    _itemsController.close();
-  }
 }

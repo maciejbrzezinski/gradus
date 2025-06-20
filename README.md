@@ -17,6 +17,29 @@ Open-source, built with **Flutter + Firebase**.
 - **Simple notes** – headlines and text
 - **Cloud sync / offline-first** – Firestore
 
+## 🔥 Firebase Setup
+
+This project requires Firebase configuration. To set up Firebase:
+
+1. **Install Firebase CLI and FlutterFire CLI:**
+   ```bash
+   npm install -g firebase-tools
+   dart pub global activate flutterfire_cli
+   ```
+
+2. **Create your own Firebase project** at https://console.firebase.google.com
+
+3. **Configure Firebase for this Flutter project:**
+   ```bash
+   flutterfire configure
+   ```
+
+4. **Follow the prompts** to select your Firebase project and platforms
+
+This will generate the required `firebase_options.dart` file and platform-specific configuration files.
+
+For detailed instructions, see: https://firebase.flutter.dev/docs/cli/
+
 ## Ideas
 
 - **Views** – Personal and work by default, you can add and customize them
