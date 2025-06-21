@@ -12,5 +12,6 @@ abstract class FirebaseModule {
   FirebaseFirestore get firebaseFirestore => FirebaseFirestore.instance;
 
   @lazySingleton
-  GoogleSignIn get googleSignIn => GoogleSignIn();
+  GoogleSignIn get googleSignIn =>
+      GoogleSignIn(clientId: '468770656573-2auup2letqh3hmva8g87chn6gd5e6v6l.apps.googleusercontent.com');
 }

@@ -18,4 +18,6 @@ class AuthState with _$AuthState {
   const factory AuthState.error(String message) = _Error;
 
   bool get isLoading => this is _Loading;
+
+  bool get isAuthenticated => this is _Authenticated;
 }

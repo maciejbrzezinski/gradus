@@ -15,6 +15,7 @@ import 'package:get_it/get_it.dart' as _i174;
 import 'package:google_sign_in/google_sign_in.dart' as _i116;
 import 'package:gradus/core/di/firebase_module.dart' as _i145;
 import 'package:gradus/core/services/auth_service.dart' as _i91;
+import 'package:gradus/core/services/logger_service.dart' as _i327;
 import 'package:gradus/data/datasources/days_datasource.dart' as _i861;
 import 'package:gradus/data/datasources/projects_datasource.dart' as _i511;
 import 'package:gradus/data/datasources/timeline_items_datasource.dart'
@@ -28,6 +29,8 @@ import 'package:gradus/domain/repositories/days_repository.dart' as _i755;
 import 'package:gradus/domain/repositories/projects_repository.dart' as _i111;
 import 'package:gradus/domain/repositories/timeline_items_repository.dart'
     as _i348;
+import 'package:gradus/domain/usecases/days/add_item_to_day_usecase.dart'
+    as _i468;
 import 'package:gradus/domain/usecases/days/get_days_usecase.dart' as _i214;
 import 'package:gradus/domain/usecases/days/move_item_between_days_usecase.dart'
     as _i913;
@@ -68,6 +71,7 @@ extension GetItInjectableX on _i174.GetIt {
       () => firebaseModule.firebaseFirestore,
     );
     gh.lazySingleton<_i116.GoogleSignIn>(() => firebaseModule.googleSignIn);
+    gh.lazySingleton<_i327.LoggerService>(() => _i327.LoggerService());
     gh.factory<_i91.AuthService>(
       () => _i91.AuthService(gh<_i59.FirebaseAuth>(), gh<_i116.GoogleSignIn>()),
     );
@@ -75,18 +79,21 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i506.TimelineItemsDataSource(
         gh<_i974.FirebaseFirestore>(),
         gh<_i91.AuthService>(),
+        gh<_i327.LoggerService>(),
       ),
     );
     gh.factory<_i861.DaysDataSource>(
       () => _i861.DaysDataSource(
         gh<_i974.FirebaseFirestore>(),
         gh<_i91.AuthService>(),
+        gh<_i327.LoggerService>(),
       ),
     );
     gh.factory<_i511.ProjectsDataSource>(
       () => _i511.ProjectsDataSource(
         gh<_i974.FirebaseFirestore>(),
         gh<_i91.AuthService>(),
+        gh<_i327.LoggerService>(),
       ),
     );
     gh.lazySingleton<_i111.ProjectsRepository>(
@@ -109,6 +116,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i755.DaysRepository>(
       () => _i776.DaysRepositoryImpl(gh<_i861.DaysDataSource>()),
     );
+    gh.factory<_i468.AddItemToDayUseCase>(
+      () => _i468.AddItemToDayUseCase(gh<_i755.DaysRepository>()),
+    );
     gh.factory<_i913.MoveItemBetweenDaysUseCase>(
       () => _i913.MoveItemBetweenDaysUseCase(gh<_i755.DaysRepository>()),
     );
@@ -119,16 +129,6 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i214.GetDaysUseCase(gh<_i755.DaysRepository>()),
     );
     gh.factory<_i858.AuthCubit>(() => _i858.AuthCubit(gh<_i91.AuthService>()));
-    gh.factory<_i293.TimelineCubit>(
-      () => _i293.TimelineCubit(
-        gh<_i214.GetDaysUseCase>(),
-        gh<_i956.WatchDaysUseCase>(),
-        gh<_i913.MoveItemBetweenDaysUseCase>(),
-        gh<_i903.GetProjectsUseCase>(),
-        gh<_i68.WatchProjectsUseCase>(),
-        gh<_i654.GetProjectByIdUseCase>(),
-      ),
-    );
     gh.factory<_i431.DeleteTimelineItemUseCase>(
       () =>
           _i431.DeleteTimelineItemUseCase(gh<_i348.TimelineItemsRepository>()),
@@ -146,6 +146,18 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i484.WatchTimelineItemUseCase>(
       () => _i484.WatchTimelineItemUseCase(gh<_i348.TimelineItemsRepository>()),
+    );
+    gh.factory<_i293.TimelineCubit>(
+      () => _i293.TimelineCubit(
+        gh<_i214.GetDaysUseCase>(),
+        gh<_i956.WatchDaysUseCase>(),
+        gh<_i913.MoveItemBetweenDaysUseCase>(),
+        gh<_i468.AddItemToDayUseCase>(),
+        gh<_i903.GetProjectsUseCase>(),
+        gh<_i68.WatchProjectsUseCase>(),
+        gh<_i654.GetProjectByIdUseCase>(),
+        gh<_i939.CreateTimelineItemUseCase>(),
+      ),
     );
     gh.factory<_i601.TimelineItemCubitFactory>(
       () => _i601.TimelineItemCubitFactory(

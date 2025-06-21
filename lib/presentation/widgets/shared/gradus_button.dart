@@ -91,7 +91,6 @@ class _GradusButtonState extends State<GradusButton>
   late Animation<double> _opacityAnimation;
 
   bool _isHovered = false;
-  bool _isPressed = false;
 
   @override
   void initState() {
@@ -103,7 +102,7 @@ class _GradusButtonState extends State<GradusButton>
 
     _scaleAnimation = Tween<double>(
       begin: 1.0,
-      end: 0.95,
+      end: 0.99,
     ).animate(CurvedAnimation(
       parent: _animationController,
       curve: AppTheme.fastCurve,
@@ -111,7 +110,7 @@ class _GradusButtonState extends State<GradusButton>
 
     _opacityAnimation = Tween<double>(
       begin: 1.0,
-      end: 0.8,
+      end: 0.95,
     ).animate(CurvedAnimation(
       parent: _animationController,
       curve: AppTheme.fastCurve,
@@ -125,17 +124,14 @@ class _GradusButtonState extends State<GradusButton>
   }
 
   void _onTapDown(TapDownDetails details) {
-    setState(() => _isPressed = true);
     _animationController.forward();
   }
 
   void _onTapUp(TapUpDetails details) {
-    setState(() => _isPressed = false);
     _animationController.reverse();
   }
 
   void _onTapCancel() {
-    setState(() => _isPressed = false);
     _animationController.reverse();
   }
 
@@ -241,12 +237,12 @@ class _GradusButtonState extends State<GradusButton>
                     children: [
                       if (widget.isLoading) ...[
                         SizedBox(
-                          width: 20,
-                          height: 20,
+                          width: 12,
+                          height: 12,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              _getForegroundColor(),
+                              _getForegroundColor().withValues(alpha: .4),
                             ),
                           ),
                         ),

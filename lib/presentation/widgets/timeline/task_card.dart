@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gradus/domain/entities/timeline_item.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/day.dart';
 import '../../../domain/entities/task.dart';
 import '../../cubits/timeline_item/timeline_item_cubit.dart';
@@ -66,20 +67,21 @@ class _TaskCardState extends State<TaskCard> {
 
   @override
   Widget build(BuildContext context) {
-    final dayId = widget.day.date.toIso8601String().split('T')[0];
-
     return Draggable<Map<String, dynamic>>(
-      data: {'itemId': widget.task.id, 'fromDayId': dayId, 'type': 'task'},
+      data: {'itemId': widget.task.id, 'fromDay': widget.day, 'type': 'task'},
       feedback: Material(
-        elevation: 8,
-        borderRadius: BorderRadius.circular(12),
+        elevation: 4,
+        borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
         child: Container(
-          width: 260,
-          padding: const EdgeInsets.all(12),
+          width: 280,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacing16,
+            vertical: AppTheme.spacing12,
+          ),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Theme.of(context).colorScheme.primary, width: 2),
+            color: AppTheme.cardBackground,
+            borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+            border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3), width: 1),
           ),
           child: _buildTaskContent(context, isDragging: true),
         ),
@@ -90,11 +92,17 @@ class _TaskCardState extends State<TaskCard> {
   }
 
   Widget _buildTaskCard(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    return Material(
+      color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        child: Container(padding: const EdgeInsets.all(12), child: _buildTaskContent(context)),
+        onTap: _startEditing,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacing24,
+            vertical: AppTheme.spacing4,
+          ),
+          child: _buildTaskContent(context),
+        ),
       ),
     );
   }
@@ -109,59 +117,88 @@ class _TaskCardState extends State<TaskCard> {
             context.read<TimelineItemCubit>().updateItem(TimelineItem.task(updatedTask));
           },
           child: Container(
-            width: 16,
-            height: 16,
+            width: 20,
+            height: 20,
             margin: const EdgeInsets.only(top: 2),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.green, width: 2),
-              color: Colors.green,
+              border: Border.all(
+                color: widget.task.isCompleted ? AppTheme.success : AppTheme.textSecondary,
+                width: 2,
+              ),
+              color: widget.task.isCompleted ? AppTheme.success : Colors.transparent,
             ),
-            child: widget.task.isCompleted ? Icon(Icons.check, size: 10, color: Colors.white) : null,
+            child: widget.task.isCompleted 
+              ? const Icon(Icons.check, size: 12, color: Colors.white)
+              : null,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppTheme.spacing12),
         Expanded(
-          child: _isEditing
-              ? Focus(
-                  onFocusChange: (hasFocus) {
-                    if (!hasFocus) {
-                      _onFocusLost();
-                    }
-                  },
-                  child: TextFormField(
-                    controller: _controller,
-                    autofocus: true,
-                    maxLines: 3,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
-                      color: widget.task.isCompleted ? Colors.grey[600] : Colors.black87,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _isEditing
+                ? Focus(
+                    onFocusChange: (hasFocus) {
+                      if (!hasFocus) {
+                        _onFocusLost();
+                      }
+                    },
+                    child: TextFormField(
+                      controller: _controller,
+                      autofocus: true,
+                      maxLines: null,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
+                        color: widget.task.isCompleted 
+                          ? AppTheme.textSecondary 
+                          : AppTheme.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        isDense: true,
+                      ),
+                      onChanged: _onTextChanged,
                     ),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                      isDense: true,
-                    ),
-                    onChanged: _onTextChanged,
-                  ),
-                )
-              : GestureDetector(
-                  onTap: _startEditing,
-                  child: Text(
+                  )
+                : Text(
                     widget.task.title,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
-                      color: widget.task.isCompleted ? Colors.grey[600] : Colors.black87,
+                      color: widget.task.isCompleted 
+                        ? AppTheme.textSecondary 
+                        : AppTheme.textPrimary,
+                      fontWeight: FontWeight.w500,
+                      height: 1.4,
                     ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
+                  ),
+              if (_shouldShowDaily()) ...[
+                const SizedBox(height: AppTheme.spacing8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacing8,
+                    vertical: AppTheme.spacing4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                  ),
+                  child: Text(
+                    'Daily',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
                   ),
                 ),
+              ],
+            ],
+          ),
         ),
-        if (_shouldShowDaily()) ...[
-          const SizedBox(width: 8),
-          Text('daily', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600], fontSize: 12)),
-        ],
       ],
     );
   }

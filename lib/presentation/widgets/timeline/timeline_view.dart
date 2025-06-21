@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/day.dart';
 import '../../../domain/entities/project.dart';
 import 'day_column.dart';
@@ -75,32 +76,86 @@ class _TimelineViewState extends State<TimelineView> {
   @override
   Widget build(BuildContext context) {
     if (widget.days.isEmpty) {
-      return const Center(child: Text('Brak dni do wyświetlenia'));
+      return _buildEmptyState(context);
     }
 
-    return ListView.builder(
-      controller: _scrollController,
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      itemCount: widget.days.length,
-      itemBuilder: (context, index) {
-        final day = widget.days[index];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing16),
+      child: ListView.builder(
+        controller: _scrollController,
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: widget.days.length,
+        itemBuilder: (context, index) {
+          final day = widget.days[index];
+          final isToday = _isToday(day.date);
 
-        return Padding(
-          padding: const EdgeInsets.only(right: 16.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2)),
-              ],
+          return Padding(
+            padding: const EdgeInsets.only(right: AppTheme.spacing16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.cardBackground,
+                borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
+                boxShadow: AppTheme.subtleShadow,
+                border: isToday 
+                  ? Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3), width: 2)
+                  : null,
+              ),
+              width: dayWidth,
+              child: DayColumn(day: day, isToday: isToday),
             ),
-            width: dayWidth,
-            child: DayColumn(day: day, isToday: _isToday(day.date)),
-          ),
-        );
-      },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 300),
+        padding: const EdgeInsets.all(AppTheme.spacing32),
+        decoration: BoxDecoration(
+          color: AppTheme.cardBackground,
+          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+          boxShadow: AppTheme.subtleShadow,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+              ),
+              child: const Icon(
+                Icons.calendar_today,
+                size: 32,
+                color: AppTheme.primaryColor,
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacing24),
+            Text(
+              'No days to display',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppTheme.spacing8),
+            Text(
+              'Your timeline will appear here once data is loaded',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

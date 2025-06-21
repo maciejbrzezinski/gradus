@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gradus/domain/entities/day.dart';
 import 'package:gradus/domain/entities/timeline_item.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/note.dart';
 import '../../../domain/entities/note_type.dart';
 import '../../cubits/timeline_item/timeline_item_cubit.dart';
@@ -70,15 +71,18 @@ class _NoteCardState extends State<NoteCard> {
     return Draggable<Map<String, dynamic>>(
       data: {'itemId': widget.note.id, 'fromDay': widget.day, 'type': 'note'},
       feedback: Material(
-        elevation: 8,
-        borderRadius: BorderRadius.circular(12),
+        elevation: 4,
+        borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
         child: Container(
-          width: 260,
-          padding: const EdgeInsets.all(12),
+          width: 280,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacing16,
+            vertical: AppTheme.spacing12,
+          ),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Theme.of(context).colorScheme.primary, width: 2),
+            color: AppTheme.cardBackground,
+            borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+            border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3), width: 1),
           ),
           child: _buildNoteContent(context, isDragging: true),
         ),
@@ -89,11 +93,22 @@ class _NoteCardState extends State<NoteCard> {
   }
 
   Widget _buildNoteCard(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    return Material(
+      color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        child: Container(padding: const EdgeInsets.all(12), child: _buildNoteContent(context)),
+        onTap: _startEditing,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacing24,
+            vertical: AppTheme.spacing4,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildNoteContent(context),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -119,27 +134,38 @@ class _NoteCardState extends State<NoteCard> {
               onChanged: _onTextChanged,
             ),
           )
-        : GestureDetector(
-            onTap: _startEditing,
-            child: Text(
-              widget.note.content,
-              style: _getNoteTextStyle(context),
-              maxLines: 10,
-              overflow: TextOverflow.ellipsis,
-            ),
+        : Text(
+            widget.note.content,
+            style: _getNoteTextStyle(context),
           );
   }
 
   TextStyle? _getNoteTextStyle(BuildContext context) {
     switch (widget.note.type) {
       case NoteType.headline1:
-        return Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600, color: Colors.black87);
+        return Theme.of(context).textTheme.headlineMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: AppTheme.textPrimary,
+          height: 1.3,
+        );
       case NoteType.headline2:
-        return Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: Colors.black87);
+        return Theme.of(context).textTheme.headlineSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: AppTheme.textPrimary,
+          height: 1.3,
+        );
       case NoteType.headline3:
-        return Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: Colors.black87);
+        return Theme.of(context).textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: AppTheme.textPrimary,
+          height: 1.4,
+        );
       case NoteType.text:
-        return Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black87, height: 1.4);
+        return Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: AppTheme.textPrimary,
+          height: 1.5,
+          fontWeight: FontWeight.w400,
+        );
     }
   }
 }

@@ -1,0 +1,1 @@
+- Never run the app, you can do it only if explicitly asked

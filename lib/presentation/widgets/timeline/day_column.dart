@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/day.dart';
 import '../../cubits/timeline/timeline_cubit.dart';
 import 'timeline_item_widget.dart';
+import 'add_item_widget.dart';
 
 class DayColumn extends StatefulWidget {
   final Day day;
@@ -44,11 +46,34 @@ class _DayColumnState extends State<DayColumn> {
       dayName = DateFormat('EEEE', 'en_US').format(widget.day.date);
     }
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Text(
-        dayName,
-        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600, color: Colors.black87),
+    final fullDateString = DateFormat('MMM d, yyyy').format(widget.day.date);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppTheme.spacing24,
+        AppTheme.spacing24,
+        AppTheme.spacing24,
+        AppTheme.spacing16,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            dayName,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: widget.isToday ? AppTheme.primaryColor : AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacing4),
+          Text(
+            fullDateString,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppTheme.textSecondary,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -58,20 +83,6 @@ class _DayColumnState extends State<DayColumn> {
   }
 
   Widget _buildItemsList(BuildContext context) {
-    if (widget.day.itemIds.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'No items',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
-        ),
-      );
-    }
-
     return DragTarget<Map<String, dynamic>>(
       onAcceptWithDetails: (details) {
         final data = details.data;
@@ -81,13 +92,52 @@ class _DayColumnState extends State<DayColumn> {
         context.read<TimelineCubit>().moveItemBetweenDays(itemId: itemId, fromDay: fromDay, toDay: widget.day);
       },
       builder: (context, candidateData, rejectedData) {
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: widget.day.itemIds.length,
-          itemBuilder: (context, index) {
-            final itemId = widget.day.itemIds[index];
-            return TimelineItemWidget(key: ValueKey(itemId), itemId: itemId, day: widget.day);
-          },
+        final isDragOver = candidateData.isNotEmpty;
+        
+        return Column(
+          children: [
+            if (widget.day.itemIds.isEmpty && isDragOver)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTheme.spacing24,
+                  vertical: AppTheme.spacing16,
+                ),
+                child: Container(
+                  width: double.infinity,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor,
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ),
+            Expanded(
+              child: Container(
+                decoration: isDragOver && widget.day.itemIds.isNotEmpty
+                  ? BoxDecoration(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.02),
+                    )
+                  : null,
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: widget.day.itemIds.length + 1, // +1 for AddItemWidget
+                  itemBuilder: (context, index) {
+                    if (index == widget.day.itemIds.length) {
+                      // Last item is the AddItemWidget
+                      return AddItemWidget(day: widget.day);
+                    }
+                    
+                    final itemId = widget.day.itemIds[index];
+                    return TimelineItemWidget(
+                      key: ValueKey(itemId), 
+                      itemId: itemId, 
+                      day: widget.day,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
         );
       },
     );

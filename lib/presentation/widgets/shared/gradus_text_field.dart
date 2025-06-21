@@ -45,12 +45,10 @@ class GradusTextField extends StatefulWidget {
   State<GradusTextField> createState() => _GradusTextFieldState();
 }
 
-class _GradusTextFieldState extends State<GradusTextField>
-    with SingleTickerProviderStateMixin {
+class _GradusTextFieldState extends State<GradusTextField> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
-  late Animation<Color?> _colorAnimation;
-  
+
   bool _isFocused = false;
   late FocusNode _focusNode;
 
@@ -58,26 +56,12 @@ class _GradusTextFieldState extends State<GradusTextField>
   void initState() {
     super.initState();
     _focusNode = widget.focusNode ?? FocusNode();
-    _animationController = AnimationController(
-      duration: AppTheme.animationDuration,
-      vsync: this,
-    );
-    
+    _animationController = AnimationController(duration: AppTheme.animationDuration, vsync: this);
+
     _scaleAnimation = Tween<double>(
       begin: 1.0,
-      end: 1.02,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: AppTheme.animationCurve,
-    ));
-    
-    _colorAnimation = ColorTween(
-      begin: AppTheme.textSecondary,
-      end: AppTheme.primaryColor,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: AppTheme.animationCurve,
-    ));
+      end: 1.01,
+    ).animate(CurvedAnimation(parent: _animationController, curve: AppTheme.animationCurve));
 
     _focusNode.addListener(_onFocusChange);
   }
@@ -96,7 +80,7 @@ class _GradusTextFieldState extends State<GradusTextField>
     setState(() {
       _isFocused = _focusNode.hasFocus;
     });
-    
+
     if (_isFocused) {
       _animationController.forward();
     } else {
@@ -118,9 +102,7 @@ class _GradusTextFieldState extends State<GradusTextField>
                 AnimatedDefaultTextStyle(
                   duration: AppTheme.fastAnimation,
                   style: Theme.of(context).textTheme.labelLarge!.copyWith(
-                    color: _isFocused 
-                        ? AppTheme.primaryColor 
-                        : AppTheme.textSecondary,
+                    color: _isFocused ? AppTheme.primaryColor : AppTheme.textSecondary,
                     fontWeight: _isFocused ? FontWeight.w600 : FontWeight.w500,
                   ),
                   child: Text(widget.label!),
@@ -128,10 +110,7 @@ class _GradusTextFieldState extends State<GradusTextField>
                 const SizedBox(height: AppTheme.spacing8),
               ],
               Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                  boxShadow: _isFocused ? AppTheme.subtleShadow : null,
-                ),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppTheme.radiusMedium)),
                 child: TextField(
                   controller: widget.controller,
                   focusNode: _focusNode,
@@ -145,47 +124,33 @@ class _GradusTextFieldState extends State<GradusTextField>
                   onChanged: widget.onChanged,
                   onTap: widget.onTap,
                   onSubmitted: widget.onSubmitted,
-                  style: Theme.of(context).textTheme.bodyLarge,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppTheme.textPrimary),
                   decoration: InputDecoration(
                     hintText: widget.hint,
                     errorText: widget.errorText,
                     prefixIcon: widget.prefixIcon,
                     suffixIcon: widget.suffixIcon,
                     filled: true,
-                    fillColor: _isFocused 
-                        ? AppTheme.surface.withOpacity(0.8)
-                        : AppTheme.surface,
+                    fillColor: _isFocused ? AppTheme.surface.withValues(alpha: 0.8) : AppTheme.surface,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
                       borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                      borderSide: BorderSide(
-                        color: Colors.grey.shade300,
-                        width: 1,
-                      ),
+                      borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                      borderSide: const BorderSide(
-                        color: AppTheme.primaryColor,
-                        width: 2,
-                      ),
+                      borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
                     ),
                     errorBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                      borderSide: const BorderSide(
-                        color: AppTheme.error,
-                        width: 1.5,
-                      ),
+                      borderSide: const BorderSide(color: AppTheme.error, width: 1.5),
                     ),
                     focusedErrorBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                      borderSide: const BorderSide(
-                        color: AppTheme.error,
-                        width: 2,
-                      ),
+                      borderSide: const BorderSide(color: AppTheme.error, width: 2),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppTheme.spacing16,
@@ -194,19 +159,6 @@ class _GradusTextFieldState extends State<GradusTextField>
                   ),
                 ),
               ),
-              if (widget.errorText != null) ...[
-                const SizedBox(height: AppTheme.spacing4),
-                AnimatedOpacity(
-                  duration: AppTheme.fastAnimation,
-                  opacity: widget.errorText != null ? 1.0 : 0.0,
-                  child: Text(
-                    widget.errorText ?? '',
-                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: AppTheme.error,
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
         );
