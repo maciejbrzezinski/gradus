@@ -94,6 +94,13 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
   }
 
   @override
+  void onBackspacePressed() {
+    context
+        .read<TimelineCubit>()
+        .deleteItemFromDay(itemId: widget.note.id, day: widget.day);
+  }
+
+  @override
   void saveChanges(String newContent) {
     if (newContent.trim() != _originalContent && newContent.trim().isNotEmpty) {
       final updatedNote = widget.note.copyWith(content: newContent.trim());

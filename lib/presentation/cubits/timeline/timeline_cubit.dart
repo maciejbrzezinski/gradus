@@ -10,6 +10,7 @@ import '../../../domain/usecases/days/get_days_usecase.dart';
 import '../../../domain/usecases/days/watch_days_usecase.dart';
 import '../../../domain/usecases/days/move_item_between_days_usecase.dart';
 import '../../../domain/usecases/days/add_item_to_day_usecase.dart';
+import '../../../domain/usecases/days/remove_item_from_day_usecase.dart';
 import '../../../domain/usecases/projects/get_projects_usecase.dart';
 import '../../../domain/usecases/projects/watch_projects_usecase.dart';
 import '../../../domain/usecases/projects/get_project_by_id_usecase.dart';
@@ -19,6 +20,7 @@ import '../../../domain/entities/task.dart';
 import '../../../domain/entities/note_type.dart';
 import '../../../domain/entities/timeline_item.dart';
 import '../../../domain/usecases/timeline_items/update_timeline_item_usecase.dart';
+import '../../../domain/usecases/timeline_items/delete_timeline_item_usecase.dart';
 import '../../../core/utils/text_commands.dart';
 import 'timeline_state.dart';
 
@@ -28,11 +30,13 @@ class TimelineCubit extends Cubit<TimelineState> {
   final WatchDaysUseCase _watchDaysUseCase;
   final MoveItemBetweenDaysUseCase _moveItemBetweenDaysUseCase;
   final AddItemToDayUseCase _addItemToDayUseCase;
+  final RemoveItemFromDayUseCase _removeItemFromDayUseCase;
   final GetProjectsUseCase _getProjectsUseCase;
   final WatchProjectsUseCase _watchProjectsUseCase;
   final GetProjectByIdUseCase _getProjectByIdUseCase;
   final CreateTimelineItemUseCase _createTimelineItemUseCase;
   final UpdateTimelineItemUseCase _updateTimelineItemUseCase;
+  final DeleteTimelineItemUseCase _deleteTimelineItemUseCase;
   final AuthService _authService;
 
   StreamSubscription? _daysSubscription;
@@ -47,11 +51,13 @@ class TimelineCubit extends Cubit<TimelineState> {
     this._watchDaysUseCase,
     this._moveItemBetweenDaysUseCase,
     this._addItemToDayUseCase,
+    this._removeItemFromDayUseCase,
     this._getProjectsUseCase,
     this._watchProjectsUseCase,
     this._getProjectByIdUseCase,
     this._createTimelineItemUseCase,
     this._updateTimelineItemUseCase,
+    this._deleteTimelineItemUseCase,
     this._authService,
   ) : super(const TimelineState.initial()) {
     _initializeTimeline();
@@ -547,6 +553,20 @@ class TimelineCubit extends Cubit<TimelineState> {
       (_) {
         print('✅ [TimelineCubit] Note type transformed successfully');
       }, // Items will be automatically updated through stream
+    );
+  }
+
+  Future<void> deleteItemFromDay({required String itemId, required Day day}) async {
+    final removeResult = await _removeItemFromDayUseCase(itemId: itemId, day: day);
+    await removeResult.fold(
+      (failure) async => emit(TimelineState.error(failure: failure)),
+      (_) async {
+        final deleteResult = await _deleteTimelineItemUseCase(itemId);
+        deleteResult.fold(
+          (failure) => emit(TimelineState.error(failure: failure)),
+          (_) {},
+        );
+      },
     );
   }
 
