@@ -14,10 +14,19 @@ class AddItemToDayUseCase {
   Future<Either<Failure, Unit>> call({
     required String itemId,
     required Day day,
+    int? index,
   }) {
-    final updatedDay = day.copyWith(
-      itemIds: [...day.itemIds, itemId],
-    );
+    final List<String> newItemIds = List.from(day.itemIds);
+    
+    if (index != null && index >= 0 && index <= newItemIds.length) {
+      // Insert at specific index
+      newItemIds.insert(index, itemId);
+    } else {
+      // Append to end (default behavior)
+      newItemIds.add(itemId);
+    }
+    
+    final updatedDay = day.copyWith(itemIds: newItemIds);
     
     return _repository.updateDay(updatedDay).then((result) {
       return result.fold(

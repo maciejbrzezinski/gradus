@@ -90,20 +90,51 @@ class DaysDataSource {
     _logger.i('🔄 [DaysDataSource] moveItemBetweenDays - itemId: $itemId, from: ${fromDay.date}, to: ${toDay.date}, toIndex: $toIndex');
     
     try {
-      // Remove from source day
-      final updatedFromItemIds = List<String>.from(fromDay.itemIds)..remove(itemId);
-      final updatedFromDay = fromDay.copyWith(itemIds: updatedFromItemIds);
-
-      // Add to target day
-      final updatedToItemIds = List<String>.from(toDay.itemIds);
-      updatedToItemIds.insert(toIndex.clamp(0, updatedToItemIds.length), itemId);
-      final updatedToDay = toDay.copyWith(itemIds: updatedToItemIds);
-
-      // Update both days
-      await updateDay(updatedFromDay);
-      await updateDay(updatedToDay);
+      // Check if it's the same day (same date and projectId)
+      final isSameDay = fromDay.date.isAtSameMomentAs(toDay.date) && 
+                       fromDay.projectId == toDay.projectId;
       
-      _logger.i('✅ [DaysDataSource] moveItemBetweenDays - successfully moved item: $itemId');
+      if (isSameDay) {
+        _logger.i('🔄 [DaysDataSource] moveItemBetweenDays - same day reordering detected');
+        
+        // Handle same-day reordering
+        final currentIndex = fromDay.itemIds.indexOf(itemId);
+        if (currentIndex == -1) {
+          _logger.w('⚠️ [DaysDataSource] moveItemBetweenDays - item not found in source day: $itemId');
+          return;
+        }
+        
+        final updatedItemIds = List<String>.from(fromDay.itemIds);
+        updatedItemIds.removeAt(currentIndex);
+        
+        // Adjust target index if moving within same list
+        final adjustedIndex = toIndex > currentIndex ? toIndex - 1 : toIndex;
+        final finalIndex = adjustedIndex.clamp(0, updatedItemIds.length);
+        updatedItemIds.insert(finalIndex, itemId);
+        
+        final updatedDay = fromDay.copyWith(itemIds: updatedItemIds);
+        await updateDay(updatedDay);
+        
+        _logger.i('✅ [DaysDataSource] moveItemBetweenDays - successfully reordered item within same day: $itemId ($currentIndex -> $finalIndex)');
+      } else {
+        _logger.i('🔄 [DaysDataSource] moveItemBetweenDays - cross-day move detected');
+        
+        // Handle cross-day moves (existing logic)
+        // Remove from source day
+        final updatedFromItemIds = List<String>.from(fromDay.itemIds)..remove(itemId);
+        final updatedFromDay = fromDay.copyWith(itemIds: updatedFromItemIds);
+
+        // Add to target day
+        final updatedToItemIds = List<String>.from(toDay.itemIds);
+        updatedToItemIds.insert(toIndex.clamp(0, updatedToItemIds.length), itemId);
+        final updatedToDay = toDay.copyWith(itemIds: updatedToItemIds);
+
+        // Update both days
+        await updateDay(updatedFromDay);
+        await updateDay(updatedToDay);
+        
+        _logger.i('✅ [DaysDataSource] moveItemBetweenDays - successfully moved item between days: $itemId');
+      }
     } catch (e) {
       _logger.e('❌ [DaysDataSource] moveItemBetweenDays - error moving item: $itemId', error: e);
       rethrow;

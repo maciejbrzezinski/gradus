@@ -6,6 +6,7 @@ import 'core/di/injection.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routes/app_routes.dart';
 import 'presentation/cubits/auth/auth_cubit.dart';
+import 'presentation/cubits/focus/focus_cubit.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -39,6 +40,7 @@ class _GradusAppState extends State<GradusApp> {
     return MultiBlocProvider(
       providers: [
         BlocProvider<AuthCubit>.value(value: authCubit!),
+        BlocProvider<FocusCubit>(create: (context) => getIt<FocusCubit>()),
       ],
       child: MaterialApp(
         title: 'Gradus',

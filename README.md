@@ -60,8 +60,8 @@ Gradus understands that your week is more than just a checklist. It's where task
 - [ ] **Enhanced Drag & Drop** - Generic system with target index + landing animations
 
 ### 🎨 UX Improvements (Medium Priority)
-- [ ] **Recurring Tasks UI** - Intuitive interface for daily/weekly/monthly tasks
-- [ ] **Cross-Project Movement** - Move items between Personal/Work/custom projects
+- [ ] **Recurring Tasks UI** - Beautiful interface for daily/weekly/monthly tasks
+- [ ] **Cross-Project Movement** - Move items between projects
 - [ ] **Add Project Button** - UI for creating and customizing new project contexts
 
 ## 🔥 Firebase Setup

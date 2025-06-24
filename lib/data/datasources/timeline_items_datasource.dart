@@ -16,9 +16,22 @@ class TimelineItemsDataSource {
   final AuthService _authService;
   final LoggerService _logger;
 
+  // Single stream controller for all timeline items
+  final StreamController<TimelineItem> _itemsController = StreamController<TimelineItem>.broadcast();
+  bool _firestoreStreamInitialized = false;
+
   TimelineItemsDataSource(this._firestore, this._authService, this._logger);
 
-  String get _userId => _authService.currentUserId;
+  String get _userId {
+    try {
+      final userId = _authService.currentUserId;
+      _logger.d('🔍 [TimelineItemsDataSource] Current userId: $userId');
+      return userId;
+    } catch (e) {
+      _logger.e('❌ [TimelineItemsDataSource] Failed to get userId: $e');
+      rethrow;
+    }
+  }
 
   CollectionReference get _timelineItemsCollection => 
     _firestore.collection('users').doc(_userId).collection('timeline_items');
@@ -26,15 +39,38 @@ class TimelineItemsDataSource {
   Stream<TimelineItem> watchTimelineItem(String itemId) {
     _logger.i('🔍 [TimelineItemsDataSource] watchTimelineItem - itemId: $itemId');
     
-    return _timelineItemsCollection
-        .doc(itemId)
-        .snapshots()
-        .where((doc) => doc.exists)
-        .map((doc) {
-          final item = _mapDocToTimelineItem(doc);
-          _logger.d('📊 [TimelineItemsDataSource] watchTimelineItem - received update for item: $itemId, type: ${item.runtimeType}');
-          return item;
-        });
+    // Initialize Firestore stream if not already done
+    _initializeFirestoreStream();
+    
+    // Return filtered stream for specific item ID
+    return _itemsController.stream.where((item) => item.id == itemId);
+  }
+
+  void _initializeFirestoreStream() {
+    if (_firestoreStreamInitialized) return;
+    
+    _firestoreStreamInitialized = true;
+    _logger.i('🔄 [TimelineItemsDataSource] Initializing Firestore stream');
+    
+    // Listen to all changes in the timeline items collection
+    _timelineItemsCollection.snapshots().listen(
+      (snapshot) {
+        for (var change in snapshot.docChanges) {
+          if (change.doc.exists) {
+            try {
+              final item = _mapDocToTimelineItem(change.doc);
+              _logger.d('📊 [TimelineItemsDataSource] Firestore update - item: ${item.id}, type: ${item.runtimeType}');
+              _itemsController.add(item);
+            } catch (e) {
+              _logger.e('❌ [TimelineItemsDataSource] Error mapping Firestore doc: ${change.doc.id}', error: e);
+            }
+          }
+        }
+      },
+      onError: (error) {
+        _logger.e('❌ [TimelineItemsDataSource] Firestore stream error', error: error);
+      },
+    );
   }
 
   Future<TimelineItem> getTimelineItem(String itemId) async {
@@ -62,7 +98,12 @@ class TimelineItemsDataSource {
     final itemType = item.when(task: (_) => 'task', note: (_) => 'note');
     _logger.i('➕ [TimelineItemsDataSource] createTimelineItem - id: ${item.id}, type: $itemType');
     
+    // 1. Immediately add to stream for instant UI update
+    _itemsController.add(item);
+    _logger.d('⚡ [TimelineItemsDataSource] Added item to stream instantly: ${item.id}');
+    
     try {
+      // 2. Save to Firestore in background
       final data = _mapTimelineItemToData(item);
       await _timelineItemsCollection.doc(item.id).set(data);
       
@@ -77,7 +118,12 @@ class TimelineItemsDataSource {
     final itemType = item.when(task: (_) => 'task', note: (_) => 'note');
     _logger.i('✏️ [TimelineItemsDataSource] updateTimelineItem - id: ${item.id}, type: $itemType');
     
+    // 1. Immediately add to stream for instant UI update
+    _itemsController.add(item);
+    _logger.d('⚡ [TimelineItemsDataSource] Updated item in stream instantly: ${item.id}');
+    
     try {
+      // 2. Check if item exists and update in Firestore
       final doc = await _timelineItemsCollection.doc(item.id).get();
       if (!doc.exists) {
         _logger.e('❌ [TimelineItemsDataSource] updateTimelineItem - timeline item not found: ${item.id}');
@@ -182,4 +228,8 @@ class TimelineItemsDataSource {
     }
   }
 
+  void dispose() {
+    _itemsController.close();
+    _logger.d('🧹 [TimelineItemsDataSource] Stream controller disposed');
+  }
 }

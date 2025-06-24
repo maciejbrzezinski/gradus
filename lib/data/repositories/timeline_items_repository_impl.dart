@@ -46,6 +46,7 @@ class TimelineItemsRepositoryImpl implements TimelineItemsRepository {
   @override
   Future<Either<Failure, Unit>> updateTimelineItem(TimelineItem item) async {
     try {
+
       await _dataSource.updateTimelineItem(item);
       return const Right(unit);
     } catch (e) {

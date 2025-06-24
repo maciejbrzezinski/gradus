@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/day.dart';
-import '../../cubits/timeline/timeline_cubit.dart';
 import 'timeline_item_widget.dart';
-import 'add_item_widget.dart';
+import 'empty_day_widget.dart';
+import 'drop_zone_widget.dart';
 
 class DayColumn extends StatefulWidget {
   final Day day;
@@ -19,13 +18,46 @@ class DayColumn extends StatefulWidget {
 }
 
 class _DayColumnState extends State<DayColumn> {
+  bool _isEditMode = false;
+
+  void _enterEditMode() {
+    setState(() {
+      _isEditMode = true;
+    });
+  }
+
+  void _exitEditMode() {
+    setState(() {
+      _isEditMode = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _buildDayHeader(context),
-        Expanded(child: _buildItemsList(context)),
-      ],
+    return GestureDetector(
+      onTap: _enterEditMode,
+      child: AnimatedContainer(
+        duration: AppTheme.animationDuration,
+        curve: AppTheme.animationCurve,
+        decoration: BoxDecoration(
+          color: _isEditMode 
+            ? AppTheme.primaryColor.withValues(alpha: 0.03)
+            : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+          border: _isEditMode 
+            ? Border.all(
+                color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                width: 1.5,
+              )
+            : null,
+        ),
+        child: Column(
+          children: [
+            _buildDayHeader(context),
+            Expanded(child: _buildItemsList(context)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -83,62 +115,46 @@ class _DayColumnState extends State<DayColumn> {
   }
 
   Widget _buildItemsList(BuildContext context) {
-    return DragTarget<Map<String, dynamic>>(
-      onAcceptWithDetails: (details) {
-        final data = details.data;
-        final itemId = data['itemId'] as String;
-        final fromDay = data['fromDay'] as Day;
-
-        context.read<TimelineCubit>().moveItemBetweenDays(itemId: itemId, fromDay: fromDay, toDay: widget.day);
-      },
-      builder: (context, candidateData, rejectedData) {
-        final isDragOver = candidateData.isNotEmpty;
-        
-        return Column(
-          children: [
-            if (widget.day.itemIds.isEmpty && isDragOver)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacing24,
-                  vertical: AppTheme.spacing16,
-                ),
-                child: Container(
-                  width: double.infinity,
-                  height: 2,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor,
-                    borderRadius: BorderRadius.circular(1),
-                  ),
-                ),
-              ),
-            Expanded(
-              child: Container(
-                decoration: isDragOver && widget.day.itemIds.isNotEmpty
-                  ? BoxDecoration(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.02),
-                    )
-                  : null,
-                child: ListView.builder(
-                  padding: EdgeInsets.zero,
-                  itemCount: widget.day.itemIds.length + 1, // +1 for AddItemWidget
-                  itemBuilder: (context, index) {
-                    if (index == widget.day.itemIds.length) {
-                      // Last item is the AddItemWidget
-                      return AddItemWidget(day: widget.day);
-                    }
-                    
-                    final itemId = widget.day.itemIds[index];
-                    return TimelineItemWidget(
-                      key: ValueKey(itemId), 
-                      itemId: itemId, 
-                      day: widget.day,
-                    );
-                  },
-                ),
-              ),
+    if (widget.day.itemIds.isEmpty) {
+      return Column(
+        children: [
+          // Drop zone for empty day
+          DropZoneWidget(
+            targetIndex: 0,
+            day: widget.day,
+          ),
+          Expanded(
+            child: EmptyDayWidget(
+              day: widget.day,
+              onItemCreated: _exitEditMode,
             ),
-          ],
-        );
+          ),
+        ],
+      );
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.zero,
+      itemCount: widget.day.itemIds.length * 2 + 1, // Items + drop zones
+      itemBuilder: (context, index) {
+        if (index.isEven) {
+          // Drop zone
+          final dropIndex = index ~/ 2;
+          return DropZoneWidget(
+            targetIndex: dropIndex,
+            day: widget.day,
+            isLastZone: dropIndex == widget.day.itemIds.length,
+          );
+        } else {
+          // Timeline item
+          final itemIndex = index ~/ 2;
+          final itemId = widget.day.itemIds[itemIndex];
+          return TimelineItemWidget(
+            key: ValueKey(itemId),
+            itemId: itemId,
+            day: widget.day,
+          );
+        }
       },
     );
   }

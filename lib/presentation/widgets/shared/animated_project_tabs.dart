@@ -43,7 +43,7 @@ class AnimatedProjectTabs extends StatelessWidget {
 }
 
 class ProjectTab extends StatefulWidget {
-  final Project project;
+  final Project project;  
   final bool isSelected;
   final VoidCallback onTap;
 

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gradus/domain/entities/timeline_item.dart';
@@ -6,7 +5,11 @@ import 'package:gradus/domain/entities/timeline_item.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/day.dart';
 import '../../../domain/entities/task.dart';
+import '../../../core/utils/text_commands.dart';
 import '../../cubits/timeline_item/timeline_item_cubit.dart';
+import '../../cubits/timeline/timeline_cubit.dart';
+import '../../cubits/focus/focus_cubit.dart';
+import '../shared/timeline_item_editing_mixin.dart';
 
 class TaskCard extends StatefulWidget {
   final Task task;
@@ -18,40 +21,72 @@ class TaskCard extends StatefulWidget {
   State<TaskCard> createState() => _TaskCardState();
 }
 
-class _TaskCardState extends State<TaskCard> {
-  bool _isEditing = false;
-  late TextEditingController _controller;
-  Timer? _debounceTimer;
+class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
   String _originalTitle = '';
 
   @override
   void initState() {
     super.initState();
     _originalTitle = widget.task.title;
-    _controller = TextEditingController(text: _originalTitle);
+    setupSmartTextController(initialText: _originalTitle);
+    
+    // Auto-enter edit mode if title is empty (newly created item)
+    if (widget.task.title.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _startEditing();
+      });
+    }
   }
 
   @override
-  void dispose() {
-    _debounceTimer?.cancel();
-    _controller.dispose();
-    super.dispose();
+  Future<void> transformCurrentItem({
+    required ItemType newType,
+    required String newContent,
+  }) async {
+    final timelineCubit = context.read<TimelineCubit>();
+    
+    if (newType == ItemType.task) {
+      // Update task title (no transformation needed)
+      saveChanges(newContent);
+    } else if (newType.isHeadline || newType == ItemType.textNote) {
+      // Transform task to note
+      final noteType = newType.toNoteType();
+      await timelineCubit.transformTaskToNote(
+        taskId: widget.task.id,
+        noteContent: newContent,
+        noteType: noteType,
+      );
+    }
+    
+    // Don't exit edit mode - let the mixin handle focus management
   }
 
-  void _onTextChanged(String value) {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      _saveChanges(value);
-    });
+  @override
+  void onEnterPressed({required bool isShiftPressed}) {
+    if (!isShiftPressed) {
+      // Regular Enter - create new task of same type
+      final currentContent = textController.text.trim();
+      if (currentContent.isNotEmpty) {
+        // Save current changes first
+        saveChanges(currentContent);
+        
+        // Create new task after current one
+        context.read<TimelineCubit>().createItemAfterCurrent(
+          currentItemId: widget.task.id,
+          day: widget.day,
+          itemType: ItemType.task,
+          content: '',
+        );
+        
+        // Exit edit mode
+        setEditingState(false);
+      }
+    }
+    // Shift+Enter is handled by the TextFormField naturally (new line)
   }
 
-  void _onFocusLost() {
-    _debounceTimer?.cancel();
-    _saveChanges(_controller.text);
-    setState(() => _isEditing = false);
-  }
-
-  void _saveChanges(String newTitle) {
+  @override
+  void saveChanges(String newTitle) {
     if (newTitle.trim() != _originalTitle && newTitle.trim().isNotEmpty) {
       final updatedTask = widget.task.copyWith(title: newTitle.trim());
       context.read<TimelineItemCubit>().updateItem(TimelineItem.task(updatedTask));
@@ -60,34 +95,52 @@ class _TaskCardState extends State<TaskCard> {
   }
 
   void _startEditing() {
-    setState(() {
-      _isEditing = true;
-    });
+    onFocusGained(widget.task.id);
+    startEditing(initialText: widget.task.title);
+    focusNode.requestFocus();
   }
 
   @override
+  String getCurrentItemId() => widget.task.id;
+
+  @override
   Widget build(BuildContext context) {
-    return Draggable<Map<String, dynamic>>(
-      data: {'itemId': widget.task.id, 'fromDay': widget.day, 'type': 'task'},
-      feedback: Material(
-        elevation: 4,
-        borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
-        child: Container(
-          width: 280,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacing16,
-            vertical: AppTheme.spacing12,
-          ),
-          decoration: BoxDecoration(
-            color: AppTheme.cardBackground,
+    return BlocBuilder<FocusCubit, String?>(
+      builder: (context, focusedItemId) {
+        final shouldFocus = focusedItemId == widget.task.id;
+        
+        // Auto-focus if this item should have focus but isn't editing yet
+        if (shouldFocus && !isEditing) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _startEditing();
+            }
+          });
+        }
+        
+        return Draggable<Map<String, dynamic>>(
+          data: {'itemId': widget.task.id, 'fromDay': widget.day, 'type': 'task'},
+          feedback: Material(
+            elevation: 4,
             borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
-            border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3), width: 1),
+            child: Container(
+              width: 280,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacing16,
+                vertical: AppTheme.spacing12,
+              ),
+              decoration: BoxDecoration(
+                color: AppTheme.cardBackground,
+                borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3), width: 1),
+              ),
+              child: _buildTaskContent(context, isDragging: true),
+            ),
           ),
-          child: _buildTaskContent(context, isDragging: true),
-        ),
-      ),
-      childWhenDragging: Opacity(opacity: 0.5, child: _buildTaskCard(context)),
-      child: _buildTaskCard(context),
+          childWhenDragging: Opacity(opacity: 0.5, child: _buildTaskCard(context)),
+          child: _buildTaskCard(context),
+        );
+      },
     );
   }
 
@@ -138,30 +191,15 @@ class _TaskCardState extends State<TaskCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _isEditing
-                ? Focus(
-                    onFocusChange: (hasFocus) {
-                      if (!hasFocus) {
-                        _onFocusLost();
-                      }
-                    },
-                    child: TextFormField(
-                      controller: _controller,
-                      autofocus: true,
-                      maxLines: null,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
-                        color: widget.task.isCompleted 
-                          ? AppTheme.textSecondary 
-                          : AppTheme.textPrimary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                        isDense: true,
-                      ),
-                      onChanged: _onTextChanged,
+              isEditing
+                ? buildEditingInput(
+                    context: context,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
+                      color: widget.task.isCompleted 
+                        ? AppTheme.textSecondary 
+                        : AppTheme.textPrimary,
+                      fontWeight: FontWeight.w500,
                     ),
                   )
                 : Text(
