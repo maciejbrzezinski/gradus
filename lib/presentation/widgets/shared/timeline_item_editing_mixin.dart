@@ -241,12 +241,17 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
       child: KeyboardListener(
         focusNode: FocusNode(),
         onKeyEvent: (KeyEvent event) {
-          if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
-            final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
-            if (!isShiftPressed) {
-              onEnterPressed(isShiftPressed: false);
+          if (event is KeyDownEvent) {
+            if (event.logicalKey == LogicalKeyboardKey.enter) {
+              final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+              if (!isShiftPressed) {
+                onEnterPressed(isShiftPressed: false);
+              }
+            } else if (event.logicalKey == LogicalKeyboardKey.backspace) {
+              if (textController.text.isEmpty) {
+                onBackspacePressed();
+              }
             }
-            // If Shift is pressed, let the TextFormField handle it naturally
           }
         },
         child: TextFormField(
@@ -290,6 +295,11 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
 
   /// Handle Enter key press
   void onEnterPressed({required bool isShiftPressed}) {
+    // Default implementation - can be overridden
+  }
+
+  /// Handle Backspace key press when text is empty
+  void onBackspacePressed() {
     // Default implementation - can be overridden
   }
 

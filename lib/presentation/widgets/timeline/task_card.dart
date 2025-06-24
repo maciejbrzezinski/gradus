@@ -86,6 +86,13 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
   }
 
   @override
+  void onBackspacePressed() {
+    context
+        .read<TimelineCubit>()
+        .deleteItemFromDay(itemId: widget.task.id, day: widget.day);
+  }
+
+  @override
   void saveChanges(String newTitle) {
     if (newTitle.trim() != _originalTitle && newTitle.trim().isNotEmpty) {
       final updatedTask = widget.task.copyWith(title: newTitle.trim());
