@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/day.dart';
 import 'timeline_item_widget.dart';
 import 'empty_day_widget.dart';
 import 'drop_zone_widget.dart';
+import '../../cubits/focus/focus_cubit.dart';
 
 class DayColumn extends StatefulWidget {
   final Day day;
@@ -133,10 +135,25 @@ class _DayColumnState extends State<DayColumn> {
       );
     }
 
+    final itemCount = widget.day.itemIds.length * 2 + 2; // Items + drop zones + bottom tap zone
+
     return ListView.builder(
       padding: EdgeInsets.zero,
-      itemCount: widget.day.itemIds.length * 2 + 1, // Items + drop zones
+      itemCount: itemCount,
       itemBuilder: (context, index) {
+        if (index == itemCount - 1) {
+          // Bottom tap area to focus the last item
+          return GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              _enterEditMode();
+              final lastItemId = widget.day.itemIds.last;
+              context.read<FocusCubit>().setFocus(lastItemId);
+            },
+            child: const SizedBox(height: AppTheme.spacing64),
+          );
+        }
+
         if (index.isEven) {
           // Drop zone
           final dropIndex = index ~/ 2;
