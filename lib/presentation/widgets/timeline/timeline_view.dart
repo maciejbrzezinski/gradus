@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gradus/core/utils/date_utils.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/day.dart';
@@ -88,7 +89,7 @@ class _TimelineViewState extends State<TimelineView> {
         itemCount: widget.days.length,
         itemBuilder: (context, index) {
           final day = widget.days[index];
-          final isToday = _isToday(day.date);
+          final isToday = day.date.isToday();
 
           return Padding(
             padding: const EdgeInsets.only(right: AppTheme.spacing16),
@@ -97,9 +98,7 @@ class _TimelineViewState extends State<TimelineView> {
                 color: AppTheme.cardBackground,
                 borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
                 boxShadow: AppTheme.subtleShadow,
-                border: isToday 
-                  ? Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3), width: 2)
-                  : null,
+                border: isToday ? Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3), width: 2) : null,
               ),
               width: dayWidth,
               child: DayColumn(day: day, isToday: isToday),
@@ -130,37 +129,25 @@ class _TimelineViewState extends State<TimelineView> {
                 color: AppTheme.primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
               ),
-              child: const Icon(
-                Icons.calendar_today,
-                size: 32,
-                color: AppTheme.primaryColor,
-              ),
+              child: const Icon(Icons.calendar_today, size: 32, color: AppTheme.primaryColor),
             ),
             const SizedBox(height: AppTheme.spacing24),
             Text(
               'No days to display',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppTheme.spacing8),
             Text(
               'Your timeline will appear here once data is loaded',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.textSecondary,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
               textAlign: TextAlign.center,
             ),
           ],
         ),
       ),
     );
-  }
-
-  bool _isToday(DateTime date) {
-    final today = DateTime.now();
-    return date.year == today.year && date.month == today.month && date.day == today.day;
   }
 }

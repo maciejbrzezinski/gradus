@@ -87,6 +87,11 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
 
   @override
   void onBackspacePressed() {
+    final index = widget.day.itemIds.indexOf(widget.task.id);
+    if (index > 0) {
+      final previousItemId = widget.day.itemIds[index - 1];
+      context.read<FocusCubit>().setFocus(previousItemId);
+    }
     context
         .read<TimelineCubit>()
         .deleteItemFromDay(itemId: widget.task.id, day: widget.day);

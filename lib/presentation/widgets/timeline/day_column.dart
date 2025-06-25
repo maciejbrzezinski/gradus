@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gradus/core/utils/date_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -20,43 +21,34 @@ class DayColumn extends StatefulWidget {
 }
 
 class _DayColumnState extends State<DayColumn> {
-  bool _isEditMode = false;
-
-  void _enterEditMode() {
-    setState(() {
-      _isEditMode = true;
-    });
-  }
-
-  void _exitEditMode() {
-    setState(() {
-      _isEditMode = false;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: _enterEditMode,
-      child: AnimatedContainer(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        if (widget.day.itemIds.isNotEmpty) {
+          final firstItemId = widget.day.itemIds.first;
+          context.read<FocusCubit>().setFocus(firstItemId);
+        }
+      },  child: AnimatedContainer(
         duration: AppTheme.animationDuration,
         curve: AppTheme.animationCurve,
-        decoration: BoxDecoration(
-          color: _isEditMode 
-            ? AppTheme.primaryColor.withValues(alpha: 0.03)
-            : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-          border: _isEditMode 
-            ? Border.all(
-                color: AppTheme.primaryColor.withValues(alpha: 0.15),
-                width: 1.5,
-              )
-            : null,
-        ),
+        decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(AppTheme.radiusLarge)),
         child: Column(
           children: [
             _buildDayHeader(context),
-            Expanded(child: _buildItemsList(context)),
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  if (widget.day.itemIds.isNotEmpty) {
+                    final firstItemId = widget.day.itemIds.last;
+                    context.read<FocusCubit>().setFocus(firstItemId);
+                  }
+                },
+                child: _buildItemsList(context),
+              ),
+            ),
           ],
         ),
       ),
@@ -69,12 +61,11 @@ class _DayColumnState extends State<DayColumn> {
     final yesterday = today.subtract(const Duration(days: 1));
     final tomorrow = today.add(const Duration(days: 1));
 
-    // Sprawdź czy to dzisiaj, wczoraj lub jutro
-    if (_isSameDay(widget.day.date, today)) {
+    if (widget.day.date.isSameDay(today)) {
       dayName = 'Today';
-    } else if (_isSameDay(widget.day.date, yesterday)) {
+    } else if (widget.day.date.isSameDay(yesterday)) {
       dayName = 'Yesterday';
-    } else if (_isSameDay(widget.day.date, tomorrow)) {
+    } else if (widget.day.date.isSameDay(tomorrow)) {
       dayName = 'Tomorrow';
     } else {
       dayName = DateFormat('EEEE', 'en_US').format(widget.day.date);
@@ -83,37 +74,15 @@ class _DayColumnState extends State<DayColumn> {
     final fullDateString = DateFormat('MMM d, yyyy').format(widget.day.date);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppTheme.spacing24,
-        AppTheme.spacing24,
-        AppTheme.spacing24,
-        AppTheme.spacing16,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            dayName,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: widget.isToday ? AppTheme.primaryColor : AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: AppTheme.spacing4),
-          Text(
-            fullDateString,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.textSecondary,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.all(AppTheme.spacing24),
+      child: Text(
+        '$dayName, $fullDateString',
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: widget.isToday ? AppTheme.primaryColor : AppTheme.textPrimary,
+        ),
       ),
     );
-  }
-
-  bool _isSameDay(DateTime date1, DateTime date2) {
-    return date1.year == date2.year && date1.month == date2.month && date1.day == date2.day;
   }
 
   Widget _buildItemsList(BuildContext context) {
@@ -121,56 +90,40 @@ class _DayColumnState extends State<DayColumn> {
       return Column(
         children: [
           // Drop zone for empty day
-          DropZoneWidget(
-            targetIndex: 0,
-            day: widget.day,
-          ),
-          Expanded(
-            child: EmptyDayWidget(
-              day: widget.day,
-              onItemCreated: _exitEditMode,
-            ),
-          ),
+          DropZoneWidget(targetIndex: 0, day: widget.day),
+          Expanded(child: EmptyDayWidget(day: widget.day)),
         ],
       );
     }
 
-    final itemCount = widget.day.itemIds.length * 2 + 2; // Items + drop zones + bottom tap zone
+    final itemCount = widget.day.itemIds.length * 2 + 1; // Items + drop zones + bottom tap zone
 
     return ListView.builder(
       padding: EdgeInsets.zero,
       itemCount: itemCount,
       itemBuilder: (context, index) {
-        if (index == itemCount - 1) {
-          // Bottom tap area to focus the last item
-          return GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () {
-              _enterEditMode();
-              final lastItemId = widget.day.itemIds.last;
-              context.read<FocusCubit>().setFocus(lastItemId);
-            },
-            child: const SizedBox(height: AppTheme.spacing64),
-          );
-        }
-
         if (index.isEven) {
           // Drop zone
           final dropIndex = index ~/ 2;
-          return DropZoneWidget(
-            targetIndex: dropIndex,
-            day: widget.day,
-            isLastZone: dropIndex == widget.day.itemIds.length,
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              if (dropIndex < widget.day.itemIds.length) {
+                final itemId = widget.day.itemIds[dropIndex];
+                context.read<FocusCubit>().setFocus(itemId);
+              }
+            },
+            child: DropZoneWidget(
+              targetIndex: dropIndex,
+              day: widget.day,
+              isLastZone: dropIndex == widget.day.itemIds.length,
+            ),
           );
         } else {
           // Timeline item
           final itemIndex = index ~/ 2;
           final itemId = widget.day.itemIds[itemIndex];
-          return TimelineItemWidget(
-            key: ValueKey(itemId),
-            itemId: itemId,
-            day: widget.day,
-          );
+          return TimelineItemWidget(key: ValueKey(itemId), itemId: itemId, day: widget.day);
         }
       },
     );

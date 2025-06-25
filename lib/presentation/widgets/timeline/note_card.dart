@@ -30,7 +30,7 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
     super.initState();
     _originalContent = widget.note.content;
     setupSmartTextController(initialText: _originalContent);
-    
+
     // Auto-enter edit mode if content is empty (newly created item)
     if (widget.note.content.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -40,29 +40,19 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
   }
 
   @override
-  Future<void> transformCurrentItem({
-    required ItemType newType,
-    required String newContent,
-  }) async {
+  Future<void> transformCurrentItem({required ItemType newType, required String newContent}) async {
     final timelineCubit = context.read<TimelineCubit>();
-    
+
     if (newType == ItemType.task) {
       // Transform note to task
-      await timelineCubit.transformNoteToTask(
-        noteId: widget.note.id,
-        taskTitle: newContent,
-      );
+      await timelineCubit.transformNoteToTask(noteId: widget.note.id, taskTitle: newContent);
     } else if (newType.isHeadline || newType == ItemType.textNote) {
       // Transform note type
       final noteType = newType.toNoteType();
-      await timelineCubit.transformNoteType(
-        noteId: widget.note.id,
-        content: newContent,
-        newType: noteType,
-      );
+      await timelineCubit.transformNoteType(noteId: widget.note.id, content: newContent, newType: noteType);
     }
     context.read<FocusCubit>().setFocus(widget.note.id);
-    
+
     // Don't exit edit mode - let the mixin handle focus management
   }
 
@@ -74,10 +64,10 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
       if (currentContent.isNotEmpty) {
         // Save current changes first
         saveChanges(currentContent);
-        
+
         // Determine the item type based on current note type
         final itemType = _noteTypeToItemType(widget.note.type);
-        
+
         // Create new note after current one
         context.read<TimelineCubit>().createItemAfterCurrent(
           currentItemId: widget.note.id,
@@ -85,7 +75,7 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
           itemType: itemType,
           content: '',
         );
-        
+
         // Exit edit mode
         setEditingState(false);
       }
@@ -95,9 +85,12 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
 
   @override
   void onBackspacePressed() {
-    context
-        .read<TimelineCubit>()
-        .deleteItemFromDay(itemId: widget.note.id, day: widget.day);
+    final index = widget.day.itemIds.indexOf(widget.note.id);
+    if (index > 0) {
+      final previousItemId = widget.day.itemIds[index - 1];
+      context.read<FocusCubit>().setFocus(previousItemId);
+    }
+    context.read<TimelineCubit>().deleteItemFromDay(itemId: widget.note.id, day: widget.day);
   }
 
   @override
@@ -136,7 +129,7 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
     return BlocBuilder<FocusCubit, String?>(
       builder: (context, focusedItemId) {
         final shouldFocus = focusedItemId == widget.note.id;
-        
+
         // Auto-focus if this item should have focus but isn't editing yet
         if (shouldFocus && !isEditing) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -145,15 +138,12 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
             }
           });
         }
-        
+
         return Draggable<Map<String, dynamic>>(
           data: {'itemId': widget.note.id, 'fromDay': widget.day, 'type': 'note'},
           feedback: Container(
             width: 280,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTheme.spacing16,
-              vertical: AppTheme.spacing12,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing16, vertical: AppTheme.spacing12),
             decoration: BoxDecoration(
               color: AppTheme.cardBackground,
               borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
@@ -172,58 +162,36 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
     return InkWell(
       onTap: _startEditing,
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.spacing24,
-          vertical: AppTheme.spacing4,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildNoteContent(context),
-          ],
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing24, vertical: AppTheme.spacing4),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_buildNoteContent(context)]),
       ),
     );
   }
 
   Widget _buildNoteContent(BuildContext context, {bool isDragging = false}) {
     return isEditing
-        ? buildEditingInput(
-            context: context,
-            style: _getNoteTextStyle(context),
-          )
-        : Text(
-            widget.note.content,
-            style: _getNoteTextStyle(context),
-          );
+        ? buildEditingInput(context: context, style: _getNoteTextStyle(context))
+        : Text(widget.note.content, style: _getNoteTextStyle(context));
   }
 
   TextStyle? _getNoteTextStyle(BuildContext context) {
     switch (widget.note.type) {
       case NoteType.headline1:
-        return Theme.of(context).textTheme.headlineMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: AppTheme.textPrimary,
-          height: 1.3,
-        );
+        return Theme.of(
+          context,
+        ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700, color: AppTheme.textPrimary, height: 1.3);
       case NoteType.headline2:
-        return Theme.of(context).textTheme.headlineSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: AppTheme.textPrimary,
-          height: 1.3,
-        );
+        return Theme.of(
+          context,
+        ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600, color: AppTheme.textPrimary, height: 1.3);
       case NoteType.headline3:
-        return Theme.of(context).textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: AppTheme.textPrimary,
-          height: 1.4,
-        );
+        return Theme.of(
+          context,
+        ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: AppTheme.textPrimary, height: 1.4);
       case NoteType.text:
-        return Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: AppTheme.textPrimary,
-          height: 1.5,
-          fontWeight: FontWeight.w400,
-        );
+        return Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: AppTheme.textPrimary, height: 1.5, fontWeight: FontWeight.w400);
     }
   }
 }
