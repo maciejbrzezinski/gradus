@@ -1,13 +1,10 @@
 # Gradus 
-<img height="60" alt="Mockup" src="https://github.com/user-attachments/assets/cce8f292-a8ab-4ff9-942a-7c3fce48f894" />
-
-*Your week isn't a checklist - it's a story.*<br>
-*Build yours - day by day.*
+*Build your story - day by day.*
 
 Timeline-first planner where **tasks, notes & ideas live together naturally**.  
 Open-source, built with **Flutter + Firebase**.
 
-<img width="1102" alt="Mockup" src="https://github.com/user-attachments/assets/f6485998-eb30-489a-a24d-37a6d93a4dc4" />
+![gif](https://github.com/user-attachments/assets/6d05d621-d044-4ace-8f40-8f5f89e7cc29)
 
 
 ## 🏗️ Architecture
