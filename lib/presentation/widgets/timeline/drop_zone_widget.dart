@@ -23,7 +23,6 @@ class DropZoneWidget extends StatefulWidget {
 
 class _DropZoneWidgetState extends State<DropZoneWidget>
     with SingleTickerProviderStateMixin {
-  bool _isDragOver = false;
   late AnimationController _animationController;
   late Animation<double> _opacityAnimation;
 
@@ -31,12 +30,12 @@ class _DropZoneWidgetState extends State<DropZoneWidget>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 50),
       vsync: this,
     );
     _opacityAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
+      begin: 0,
+      end: 1,
     ).animate(CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
@@ -50,16 +49,10 @@ class _DropZoneWidgetState extends State<DropZoneWidget>
   }
 
   void _onDragEnter() {
-    setState(() {
-      _isDragOver = true;
-    });
     _animationController.forward();
   }
 
   void _onDragLeave() {
-    setState(() {
-      _isDragOver = false;
-    });
     _animationController.reverse();
   }
 
@@ -96,7 +89,7 @@ class _DropZoneWidgetState extends State<DropZoneWidget>
         
         return AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          height: isActive ? 24 : 8,
+          height: isActive ? 16 : 8,
           margin: EdgeInsets.symmetric(
             horizontal: AppTheme.spacing24,
             vertical: isActive ? AppTheme.spacing4 : 0,
@@ -110,7 +103,7 @@ class _DropZoneWidgetState extends State<DropZoneWidget>
                   height: 2,
                   decoration: BoxDecoration(
                     color: AppTheme.primaryColor.withValues(
-                      alpha: _opacityAnimation.value * 0.8,
+                      alpha: _opacityAnimation.value * 0.4,
                     ),
                     borderRadius: BorderRadius.circular(1),
                     boxShadow: _opacityAnimation.value > 0.5
