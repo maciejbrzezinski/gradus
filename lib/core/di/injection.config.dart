@@ -16,6 +16,7 @@ import 'package:google_sign_in/google_sign_in.dart' as _i116;
 import 'package:gradus/core/di/firebase_module.dart' as _i145;
 import 'package:gradus/core/services/auth_service.dart' as _i91;
 import 'package:gradus/core/services/logger_service.dart' as _i327;
+import 'package:gradus/core/services/optimistic_sync_service.dart' as _i136;
 import 'package:gradus/data/datasources/days_datasource.dart' as _i861;
 import 'package:gradus/data/datasources/projects_datasource.dart' as _i511;
 import 'package:gradus/data/datasources/timeline_items_datasource.dart'
@@ -31,11 +32,11 @@ import 'package:gradus/domain/repositories/timeline_items_repository.dart'
     as _i348;
 import 'package:gradus/domain/usecases/days/add_item_to_day_usecase.dart'
     as _i468;
-import 'package:gradus/domain/usecases/days/remove_item_from_day_usecase.dart'
-    as _i1004;
 import 'package:gradus/domain/usecases/days/get_days_usecase.dart' as _i214;
 import 'package:gradus/domain/usecases/days/move_item_between_days_usecase.dart'
     as _i913;
+import 'package:gradus/domain/usecases/days/remove_item_from_day_usecase.dart'
+    as _i811;
 import 'package:gradus/domain/usecases/days/watch_days_usecase.dart' as _i956;
 import 'package:gradus/domain/usecases/projects/get_project_by_id_usecase.dart'
     as _i654;
@@ -123,11 +124,11 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i468.AddItemToDayUseCase>(
       () => _i468.AddItemToDayUseCase(gh<_i755.DaysRepository>()),
     );
-    gh.factory<_i1004.RemoveItemFromDayUseCase>(
-      () => _i1004.RemoveItemFromDayUseCase(gh<_i755.DaysRepository>()),
-    );
     gh.factory<_i913.MoveItemBetweenDaysUseCase>(
       () => _i913.MoveItemBetweenDaysUseCase(gh<_i755.DaysRepository>()),
+    );
+    gh.factory<_i811.RemoveItemFromDayUseCase>(
+      () => _i811.RemoveItemFromDayUseCase(gh<_i755.DaysRepository>()),
     );
     gh.factory<_i956.WatchDaysUseCase>(
       () => _i956.WatchDaysUseCase(gh<_i755.DaysRepository>()),
@@ -154,12 +155,13 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i484.WatchTimelineItemUseCase>(
       () => _i484.WatchTimelineItemUseCase(gh<_i348.TimelineItemsRepository>()),
     );
-    gh.factory<_i601.TimelineItemCubitFactory>(
-      () => _i601.TimelineItemCubitFactory(
-        gh<_i172.GetTimelineItemUseCase>(),
-        gh<_i484.WatchTimelineItemUseCase>(),
-        gh<_i1003.UpdateTimelineItemUseCase>(),
+    gh.factory<_i136.OptimisticSyncService>(
+      () => _i136.OptimisticSyncService(
+        gh<_i755.DaysRepository>(),
+        gh<_i348.TimelineItemsRepository>(),
+        gh<_i811.RemoveItemFromDayUseCase>(),
         gh<_i431.DeleteTimelineItemUseCase>(),
+        gh<_i327.LoggerService>(),
       ),
     );
     gh.factory<_i293.TimelineCubit>(
@@ -168,7 +170,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i956.WatchDaysUseCase>(),
         gh<_i913.MoveItemBetweenDaysUseCase>(),
         gh<_i468.AddItemToDayUseCase>(),
-        gh<_i1004.RemoveItemFromDayUseCase>(),
+        gh<_i811.RemoveItemFromDayUseCase>(),
         gh<_i903.GetProjectsUseCase>(),
         gh<_i68.WatchProjectsUseCase>(),
         gh<_i654.GetProjectByIdUseCase>(),
@@ -176,6 +178,15 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i1003.UpdateTimelineItemUseCase>(),
         gh<_i431.DeleteTimelineItemUseCase>(),
         gh<_i91.AuthService>(),
+        gh<_i136.OptimisticSyncService>(),
+      ),
+    );
+    gh.factory<_i601.TimelineItemCubitFactory>(
+      () => _i601.TimelineItemCubitFactory(
+        gh<_i172.GetTimelineItemUseCase>(),
+        gh<_i484.WatchTimelineItemUseCase>(),
+        gh<_i1003.UpdateTimelineItemUseCase>(),
+        gh<_i431.DeleteTimelineItemUseCase>(),
       ),
     );
     return this;

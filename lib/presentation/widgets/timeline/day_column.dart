@@ -30,7 +30,8 @@ class _DayColumnState extends State<DayColumn> {
           final firstItemId = widget.day.itemIds.first;
           context.read<FocusCubit>().setFocus(firstItemId);
         }
-      },  child: AnimatedContainer(
+      },
+      child: AnimatedContainer(
         duration: AppTheme.animationDuration,
         curve: AppTheme.animationCurve,
         decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(AppTheme.radiusLarge)),

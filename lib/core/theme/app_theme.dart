@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Primary color #FBB660
@@ -112,7 +113,7 @@ class AppTheme {
             horizontal: spacing24,
             vertical: spacing16,
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.montserrat(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -140,7 +141,7 @@ class AppTheme {
             horizontal: spacing20,
             vertical: spacing12,
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.montserrat(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -157,7 +158,7 @@ class AppTheme {
             horizontal: spacing24,
             vertical: spacing16,
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.montserrat(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -213,92 +214,92 @@ class AppTheme {
         ),
         margin: const EdgeInsets.all(spacing8),
       ),
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(
+      textTheme: GoogleFonts.montserratTextTheme().copyWith(
+        displayLarge: GoogleFonts.montserrat(
           fontSize: 32,
           fontWeight: FontWeight.bold,
           color: textPrimary,
           height: 1.2,
         ),
-        displayMedium: TextStyle(
+        displayMedium: GoogleFonts.montserrat(
           fontSize: 28,
           fontWeight: FontWeight.bold,
           color: textPrimary,
           height: 1.2,
         ),
-        displaySmall: TextStyle(
+        displaySmall: GoogleFonts.montserrat(
           fontSize: 24,
           fontWeight: FontWeight.bold,
           color: textPrimary,
           height: 1.3,
         ),
-        headlineLarge: TextStyle(
+        headlineLarge: GoogleFonts.montserrat(
           fontSize: 22,
           fontWeight: FontWeight.w600,
           color: textPrimary,
           height: 1.3,
         ),
-        headlineMedium: TextStyle(
+        headlineMedium: GoogleFonts.montserrat(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: textPrimary,
           height: 1.3,
         ),
-        headlineSmall: TextStyle(
+        headlineSmall: GoogleFonts.montserrat(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: textPrimary,
           height: 1.4,
         ),
-        titleLarge: TextStyle(
+        titleLarge: GoogleFonts.montserrat(
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: textPrimary,
           height: 1.4,
         ),
-        titleMedium: TextStyle(
+        titleMedium: GoogleFonts.montserrat(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: textPrimary,
           height: 1.4,
         ),
-        titleSmall: TextStyle(
+        titleSmall: GoogleFonts.montserrat(
           fontSize: 12,
           fontWeight: FontWeight.w500,
           color: textSecondary,
           height: 1.4,
         ),
-        bodyLarge: TextStyle(
+        bodyLarge: GoogleFonts.montserrat(
           fontSize: 16,
           fontWeight: FontWeight.normal,
           color: textPrimary,
           height: 1.5,
         ),
-        bodyMedium: TextStyle(
+        bodyMedium: GoogleFonts.montserrat(
           fontSize: 14,
           fontWeight: FontWeight.normal,
           color: textPrimary,
           height: 1.5,
         ),
-        bodySmall: TextStyle(
+        bodySmall: GoogleFonts.montserrat(
           fontSize: 12,
           fontWeight: FontWeight.normal,
           color: textSecondary,
           height: 1.5,
         ),
-        labelLarge: TextStyle(
+        labelLarge: GoogleFonts.montserrat(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: textPrimary,
           height: 1.4,
         ),
-        labelMedium: TextStyle(
+        labelMedium: GoogleFonts.montserrat(
           fontSize: 12,
           fontWeight: FontWeight.w500,
           color: textSecondary,
           height: 1.4,
         ),
-        labelSmall: TextStyle(
+        labelSmall: GoogleFonts.montserrat(
           fontSize: 10,
           fontWeight: FontWeight.w500,
           color: textTertiary,
@@ -341,7 +342,7 @@ class AppTheme {
             horizontal: spacing24,
             vertical: spacing16,
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.montserrat(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -357,7 +358,7 @@ class AppTheme {
             horizontal: spacing20,
             vertical: spacing12,
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.montserrat(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -374,7 +375,7 @@ class AppTheme {
             horizontal: spacing24,
             vertical: spacing16,
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.montserrat(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -430,92 +431,92 @@ class AppTheme {
         ),
         margin: const EdgeInsets.all(spacing8),
       ),
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(
+      textTheme: GoogleFonts.montserratTextTheme(ThemeData.dark().textTheme).copyWith(
+        displayLarge: GoogleFonts.montserrat(
           fontSize: 32,
           fontWeight: FontWeight.bold,
           color: Colors.white,
           height: 1.2,
         ),
-        displayMedium: TextStyle(
+        displayMedium: GoogleFonts.montserrat(
           fontSize: 28,
           fontWeight: FontWeight.bold,
           color: Colors.white,
           height: 1.2,
         ),
-        displaySmall: TextStyle(
+        displaySmall: GoogleFonts.montserrat(
           fontSize: 24,
           fontWeight: FontWeight.bold,
           color: Colors.white,
           height: 1.3,
         ),
-        headlineLarge: TextStyle(
+        headlineLarge: GoogleFonts.montserrat(
           fontSize: 22,
           fontWeight: FontWeight.w600,
           color: Colors.white,
           height: 1.3,
         ),
-        headlineMedium: TextStyle(
+        headlineMedium: GoogleFonts.montserrat(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: Colors.white,
           height: 1.3,
         ),
-        headlineSmall: TextStyle(
+        headlineSmall: GoogleFonts.montserrat(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: Colors.white,
           height: 1.4,
         ),
-        titleLarge: TextStyle(
+        titleLarge: GoogleFonts.montserrat(
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: Colors.white,
           height: 1.4,
         ),
-        titleMedium: TextStyle(
+        titleMedium: GoogleFonts.montserrat(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: Colors.white,
           height: 1.4,
         ),
-        titleSmall: TextStyle(
+        titleSmall: GoogleFonts.montserrat(
           fontSize: 12,
           fontWeight: FontWeight.w500,
           color: Colors.grey,
           height: 1.4,
         ),
-        bodyLarge: TextStyle(
+        bodyLarge: GoogleFonts.montserrat(
           fontSize: 16,
           fontWeight: FontWeight.normal,
           color: Colors.white,
           height: 1.5,
         ),
-        bodyMedium: TextStyle(
+        bodyMedium: GoogleFonts.montserrat(
           fontSize: 14,
           fontWeight: FontWeight.normal,
           color: Colors.white,
           height: 1.5,
         ),
-        bodySmall: TextStyle(
+        bodySmall: GoogleFonts.montserrat(
           fontSize: 12,
           fontWeight: FontWeight.normal,
           color: Colors.grey,
           height: 1.5,
         ),
-        labelLarge: TextStyle(
+        labelLarge: GoogleFonts.montserrat(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: Colors.white,
           height: 1.4,
         ),
-        labelMedium: TextStyle(
+        labelMedium: GoogleFonts.montserrat(
           fontSize: 12,
           fontWeight: FontWeight.w500,
           color: Colors.grey,
           height: 1.4,
         ),
-        labelSmall: TextStyle(
+        labelSmall: GoogleFonts.montserrat(
           fontSize: 10,
           fontWeight: FontWeight.w500,
           color: Colors.grey,

@@ -22,6 +22,7 @@ import '../../../domain/entities/timeline_item.dart';
 import '../../../domain/usecases/timeline_items/update_timeline_item_usecase.dart';
 import '../../../domain/usecases/timeline_items/delete_timeline_item_usecase.dart';
 import '../../../core/utils/text_commands.dart';
+import '../../../core/services/optimistic_sync_service.dart';
 import 'timeline_state.dart';
 
 @injectable
@@ -38,6 +39,7 @@ class TimelineCubit extends Cubit<TimelineState> {
   final UpdateTimelineItemUseCase _updateTimelineItemUseCase;
   final DeleteTimelineItemUseCase _deleteTimelineItemUseCase;
   final AuthService _authService;
+  final OptimisticSyncService _optimisticSyncService;
 
   StreamSubscription? _daysSubscription;
   StreamSubscription? _projectsSubscription;
@@ -59,6 +61,7 @@ class TimelineCubit extends Cubit<TimelineState> {
     this._updateTimelineItemUseCase,
     this._deleteTimelineItemUseCase,
     this._authService,
+    this._optimisticSyncService,
   ) : super(const TimelineState.initial()) {
     _initializeTimeline();
   }
@@ -209,12 +212,166 @@ class TimelineCubit extends Cubit<TimelineState> {
     required Day toDay,
     required int toIndex,
   }) async {
-    final result = await _moveItemBetweenDaysUseCase(itemId: itemId, fromDay: fromDay, toDay: toDay, toIndex: toIndex);
+    print('🚀 [TimelineCubit] moveItemBetweenDays - OPTIMISTIC UPDATE');
+    
+    final currentState = state;
+    if (currentState is! TimelineLoaded) return;
 
-    result.fold(
-      (failure) => emit(TimelineState.error(failure: failure)),
-      (_) {}, // Days will be automatically updated through stream
+    // Generate operation ID
+    final operationId = 'move_${itemId}_${DateTime.now().millisecondsSinceEpoch}';
+    
+    // Apply optimistic update immediately
+    _applyOptimisticMove(
+      itemId: itemId,
+      fromDay: fromDay,
+      toDay: toDay,
+      toIndex: toIndex,
+      operationId: operationId,
     );
+
+    // Sync in background
+    _optimisticSyncService.syncMoveOperation(
+      itemId: itemId,
+      fromDay: fromDay,
+      toDay: toDay,
+      toIndex: toIndex,
+      operationId: operationId,
+    ).catchError((error) {
+      print('❌ [TimelineCubit] Move sync failed: $error');
+      // TODO: Implement rollback mechanism
+      _removeOptimisticOperation(operationId);
+    });
+  }
+
+  void _applyOptimisticMove({
+    required String itemId,
+    required Day fromDay,
+    required Day toDay,
+    required int toIndex,
+    required String operationId,
+  }) {
+    final currentState = state;
+    if (currentState is! TimelineLoaded) return;
+
+    // Check if it's the same day (same date and projectId)
+    final isSameDay = fromDay.date.isAtSameMomentAs(toDay.date) && 
+                     fromDay.projectId == toDay.projectId;
+    
+    Map<String, Day> optimisticDays = Map.from(currentState.optimisticDays);
+    
+    if (isSameDay) {
+      // Handle same-day reordering
+      final currentIndex = fromDay.itemIds.indexOf(itemId);
+      if (currentIndex == -1) return;
+      
+      final updatedItemIds = List<String>.from(fromDay.itemIds);
+      updatedItemIds.removeAt(currentIndex);
+      
+      // Adjust target index if moving within same list
+      final adjustedIndex = toIndex > currentIndex ? toIndex - 1 : toIndex;
+      final finalIndex = adjustedIndex.clamp(0, updatedItemIds.length);
+      updatedItemIds.insert(finalIndex, itemId);
+      
+      final updatedDay = fromDay.copyWith(itemIds: updatedItemIds);
+      final dayKey = _getDayKey(updatedDay);
+      optimisticDays[dayKey] = updatedDay;
+    } else {
+      // Handle cross-day moves
+      // Remove from source day
+      final updatedFromItemIds = List<String>.from(fromDay.itemIds)..remove(itemId);
+      final updatedFromDay = fromDay.copyWith(itemIds: updatedFromItemIds);
+      final fromDayKey = _getDayKey(updatedFromDay);
+      optimisticDays[fromDayKey] = updatedFromDay;
+
+      // Add to target day
+      final updatedToItemIds = List<String>.from(toDay.itemIds);
+      updatedToItemIds.insert(toIndex.clamp(0, updatedToItemIds.length), itemId);
+      final updatedToDay = toDay.copyWith(itemIds: updatedToItemIds);
+      final toDayKey = _getDayKey(updatedToDay);
+      optimisticDays[toDayKey] = updatedToDay;
+    }
+
+    // Update state with optimistic changes
+    emit(currentState.copyWith(
+      pendingOperations: {...currentState.pendingOperations, operationId},
+      optimisticDays: optimisticDays,
+    ));
+  }
+
+  void _removeOptimisticOperation(String operationId) {
+    final currentState = state;
+    if (currentState is! TimelineLoaded) return;
+
+    final updatedPendingOperations = Set<String>.from(currentState.pendingOperations);
+    updatedPendingOperations.remove(operationId);
+
+    emit(currentState.copyWith(
+      pendingOperations: updatedPendingOperations,
+    ));
+  }
+
+  void _addPendingOperation(String operationId) {
+    final currentState = state;
+    if (currentState is! TimelineLoaded) return;
+
+    emit(currentState.copyWith(
+      pendingOperations: {...currentState.pendingOperations, operationId},
+    ));
+  }
+
+  String _getDayKey(Day day) => '${day.projectId}_${day.date.toIso8601String().split('T')[0]}';
+
+  void _applyOptimisticItemCreation({
+    required String itemId,
+    required Day day,
+    required String operationId,
+    int? insertIndex,
+  }) {
+    final currentState = state;
+    if (currentState is! TimelineLoaded) return;
+
+    // Add item to the specified position or end of the day's item list
+    final updatedItemIds = List<String>.from(day.itemIds);
+    if (insertIndex != null) {
+      updatedItemIds.insert(insertIndex.clamp(0, updatedItemIds.length), itemId);
+    } else {
+      updatedItemIds.add(itemId);
+    }
+    
+    final updatedDay = day.copyWith(itemIds: updatedItemIds);
+    final dayKey = _getDayKey(updatedDay);
+
+    Map<String, Day> optimisticDays = Map.from(currentState.optimisticDays);
+    optimisticDays[dayKey] = updatedDay;
+
+    // Update state with optimistic changes
+    emit(currentState.copyWith(
+      pendingOperations: {...currentState.pendingOperations, operationId},
+      optimisticDays: optimisticDays,
+    ));
+  }
+
+  void _applyOptimisticItemDeletion({
+    required String itemId,
+    required Day day,
+    required String operationId,
+  }) {
+    final currentState = state;
+    if (currentState is! TimelineLoaded) return;
+
+    // Remove item from the day's item list
+    final updatedItemIds = List<String>.from(day.itemIds)..remove(itemId);
+    final updatedDay = day.copyWith(itemIds: updatedItemIds);
+    final dayKey = _getDayKey(updatedDay);
+
+    Map<String, Day> optimisticDays = Map.from(currentState.optimisticDays);
+    optimisticDays[dayKey] = updatedDay;
+
+    // Update state with optimistic changes
+    emit(currentState.copyWith(
+      pendingOperations: {...currentState.pendingOperations, operationId},
+      optimisticDays: optimisticDays,
+    ));
   }
 
   Future<void> createItemAfterCurrent({
@@ -250,7 +407,7 @@ class TimelineCubit extends Cubit<TimelineState> {
   }
 
   Future<void> _createTaskAtPosition({required String title, required Day day, required int insertIndex}) async {
-    print('🔍 [TimelineCubit] _createTaskAtPosition called - title: "$title", insertIndex: $insertIndex');
+    print('🚀 [TimelineCubit] _createTaskAtPosition - OPTIMISTIC UPDATE');
 
     // Ensure user is authenticated
     try {
@@ -267,26 +424,39 @@ class TimelineCubit extends Cubit<TimelineState> {
 
     final now = DateTime.now();
     final taskId = 'task_${now.millisecondsSinceEpoch}';
+    final operationId = 'create_task_at_position_${taskId}';
 
     final task = Task(id: taskId, createdAt: now, updatedAt: now, title: title, isCompleted: false);
 
-    // First create the timeline item
-    final timelineItem = TimelineItem.task(task);
-    final createResult = await _createTimelineItemUseCase(timelineItem);
-
-    await createResult.fold(
-      (failure) async {
-        emit(TimelineState.error(failure: failure));
-      },
-      (_) async {
-        // Then add it to the day at the specific position
-        final addResult = await _addItemToDayUseCase(itemId: taskId, day: day, index: insertIndex);
-        addResult.fold(
-          (failure) => emit(TimelineState.error(failure: failure)),
-          (_) {}, // Days will be automatically updated through stream
-        );
-      },
+    // Apply optimistic update immediately
+    _applyOptimisticItemCreation(
+      itemId: taskId,
+      day: day,
+      operationId: operationId,
+      insertIndex: insertIndex,
     );
+
+    // Create timeline item and sync in background
+    final timelineItem = TimelineItem.task(task);
+    
+    _optimisticSyncService.syncTimelineItemCreation(timelineItem, operationId).then((_) {
+      // After item is created, add it to the day at the specific position
+      return _addItemToDayUseCase(itemId: taskId, day: day, index: insertIndex);
+    }).then((addResult) {
+      addResult.fold(
+        (failure) {
+          print('❌ [TimelineCubit] Failed to add task to day at position: ${failure.toString()}');
+          _removeOptimisticOperation(operationId);
+        },
+        (_) {
+          print('✅ [TimelineCubit] Task creation at position completed successfully');
+          _removeOptimisticOperation(operationId);
+        },
+      );
+    }).catchError((error) {
+      print('❌ [TimelineCubit] Task creation at position sync failed: $error');
+      _removeOptimisticOperation(operationId);
+    });
   }
 
   Future<void> _createNoteAtPosition({
@@ -295,9 +465,7 @@ class TimelineCubit extends Cubit<TimelineState> {
     required Day day,
     required int insertIndex,
   }) async {
-    print(
-      '🔍 [TimelineCubit] _createNoteAtPosition called - content: "$content", type: $type, insertIndex: $insertIndex',
-    );
+    print('🚀 [TimelineCubit] _createNoteAtPosition - OPTIMISTIC UPDATE');
 
     // Ensure user is authenticated
     try {
@@ -314,155 +482,157 @@ class TimelineCubit extends Cubit<TimelineState> {
 
     final now = DateTime.now();
     final noteId = 'note_${now.millisecondsSinceEpoch}';
+    final operationId = 'create_note_at_position_${noteId}';
 
     final note = Note(id: noteId, createdAt: now, updatedAt: now, content: content, type: type);
 
-    // First create the timeline item
-    final timelineItem = TimelineItem.note(note);
-    final createResult = await _createTimelineItemUseCase(timelineItem);
-
-    await createResult.fold(
-      (failure) async {
-        emit(TimelineState.error(failure: failure));
-      },
-      (_) async {
-        // Then add it to the day at the specific position
-        final addResult = await _addItemToDayUseCase(itemId: noteId, day: day, index: insertIndex);
-        addResult.fold(
-          (failure) => emit(TimelineState.error(failure: failure)),
-          (_) {}, // Days will be automatically updated through stream
-        );
-      },
+    // Apply optimistic update immediately
+    _applyOptimisticItemCreation(
+      itemId: noteId,
+      day: day,
+      operationId: operationId,
+      insertIndex: insertIndex,
     );
+
+    // Create timeline item and sync in background
+    final timelineItem = TimelineItem.note(note);
+    
+    _optimisticSyncService.syncTimelineItemCreation(timelineItem, operationId).then((_) {
+      // After item is created, add it to the day at the specific position
+      return _addItemToDayUseCase(itemId: noteId, day: day, index: insertIndex);
+    }).then((addResult) {
+      addResult.fold(
+        (failure) {
+          print('❌ [TimelineCubit] Failed to add note to day at position: ${failure.toString()}');
+          _removeOptimisticOperation(operationId);
+        },
+        (_) {
+          print('✅ [TimelineCubit] Note creation at position completed successfully');
+          _removeOptimisticOperation(operationId);
+        },
+      );
+    }).catchError((error) {
+      print('❌ [TimelineCubit] Note creation at position sync failed: $error');
+      _removeOptimisticOperation(operationId);
+    });
   }
 
   Future<void> createNote({required String content, required NoteType type, required Day day}) async {
-    print('🔍 [TimelineCubit] createNote called - content: "$content", type: $type, day: ${day.date}');
-    print('🔍 [TimelineCubit] selectedProject: ${_selectedProject?.name ?? 'null'}');
-    print('🔍 [TimelineCubit] isAuthenticated: ${_authService.isAuthenticated}');
+    print('🚀 [TimelineCubit] createNote - OPTIMISTIC UPDATE');
 
     // Ensure user is authenticated
     try {
       await _authService.ensureAuthenticated();
-      print('✅ [TimelineCubit] User authenticated successfully');
     } catch (e) {
-      print('❌ [TimelineCubit] Authentication failed: $e');
       emit(TimelineState.error(failure: Failure.unknownFailure(message: 'Authentication failed: $e')));
       return;
     }
 
     if (_selectedProject == null) {
-      print('❌ [TimelineCubit] No project selected');
       emit(const TimelineState.error(failure: Failure.validationFailure(message: 'No project selected')));
       return;
     }
 
     final now = DateTime.now();
     final noteId = 'note_${now.millisecondsSinceEpoch}';
-
-    print('🔍 [TimelineCubit] Generated noteId: $noteId');
+    final operationId = 'create_note_${noteId}';
 
     final note = Note(id: noteId, createdAt: now, updatedAt: now, content: content, type: type);
 
-    print('🔍 [TimelineCubit] Created note entity: ${note.toString()}');
-
-    // First create the timeline item
-    final timelineItem = TimelineItem.note(note);
-    print('🔍 [TimelineCubit] Created timeline item, calling createTimelineItemUseCase...');
-
-    final createResult = await _createTimelineItemUseCase(timelineItem);
-
-    await createResult.fold(
-      (failure) async {
-        print('❌ [TimelineCubit] Failed to create timeline item: ${failure.toString()}');
-        emit(TimelineState.error(failure: failure));
-      },
-      (_) async {
-        print('✅ [TimelineCubit] Timeline item created successfully, adding to day...');
-        // Then add it to the day
-        final addResult = await _addItemToDayUseCase(itemId: noteId, day: day);
-        addResult.fold(
-          (failure) {
-            print('❌ [TimelineCubit] Failed to add item to day: ${failure.toString()}');
-            emit(TimelineState.error(failure: failure));
-          },
-          (_) {
-            print('✅ [TimelineCubit] Item added to day successfully');
-          }, // Days will be automatically updated through stream
-        );
-      },
+    // Apply optimistic update immediately
+    _applyOptimisticItemCreation(
+      itemId: noteId,
+      day: day,
+      operationId: operationId,
     );
+
+    // Create timeline item and sync in background
+    final timelineItem = TimelineItem.note(note);
+    
+    _optimisticSyncService.syncTimelineItemCreation(timelineItem, operationId).then((_) {
+      // After item is created, add it to the day
+      return _addItemToDayUseCase(itemId: noteId, day: day);
+    }).then((addResult) {
+      addResult.fold(
+        (failure) {
+          print('❌ [TimelineCubit] Failed to add item to day: ${failure.toString()}');
+          _removeOptimisticOperation(operationId);
+        },
+        (_) {
+          print('✅ [TimelineCubit] Item creation completed successfully');
+          _removeOptimisticOperation(operationId);
+        },
+      );
+    }).catchError((error) {
+      print('❌ [TimelineCubit] Item creation sync failed: $error');
+      _removeOptimisticOperation(operationId);
+    });
   }
 
   Future<void> createTask({required String title, required Day day}) async {
-    print('🔍 [TimelineCubit] createTask called - title: "$title", day: ${day.date}');
-    print('🔍 [TimelineCubit] selectedProject: ${_selectedProject?.name ?? 'null'}');
-    print('🔍 [TimelineCubit] isAuthenticated: ${_authService.isAuthenticated}');
+    print('🚀 [TimelineCubit] createTask - OPTIMISTIC UPDATE');
 
     // Ensure user is authenticated
     try {
       await _authService.ensureAuthenticated();
-      print('✅ [TimelineCubit] User authenticated successfully');
     } catch (e) {
-      print('❌ [TimelineCubit] Authentication failed: $e');
       emit(TimelineState.error(failure: Failure.unknownFailure(message: 'Authentication failed: $e')));
       return;
     }
 
     if (_selectedProject == null) {
-      print('❌ [TimelineCubit] No project selected');
       emit(const TimelineState.error(failure: Failure.validationFailure(message: 'No project selected')));
       return;
     }
 
     final now = DateTime.now();
     final taskId = 'task_${now.millisecondsSinceEpoch}';
-
-    print('🔍 [TimelineCubit] Generated taskId: $taskId');
+    final operationId = 'create_task_${taskId}';
 
     final task = Task(id: taskId, createdAt: now, updatedAt: now, title: title, isCompleted: false);
 
-    print('🔍 [TimelineCubit] Created task entity: ${task.toString()}');
-
-    // First create the timeline item
-    final timelineItem = TimelineItem.task(task);
-    print('🔍 [TimelineCubit] Created timeline item, calling createTimelineItemUseCase...');
-
-    final createResult = await _createTimelineItemUseCase(timelineItem);
-
-    await createResult.fold(
-      (failure) async {
-        print('❌ [TimelineCubit] Failed to create timeline item: ${failure.toString()}');
-        emit(TimelineState.error(failure: failure));
-      },
-      (_) async {
-        print('✅ [TimelineCubit] Timeline item created successfully, adding to day...');
-        // Then add it to the day
-        final addResult = await _addItemToDayUseCase(itemId: taskId, day: day);
-        addResult.fold(
-          (failure) {
-            print('❌ [TimelineCubit] Failed to add item to day: ${failure.toString()}');
-            emit(TimelineState.error(failure: failure));
-          },
-          (_) {
-            print('✅ [TimelineCubit] Item added to day successfully');
-          }, // Days will be automatically updated through stream
-        );
-      },
+    // Apply optimistic update immediately
+    _applyOptimisticItemCreation(
+      itemId: taskId,
+      day: day,
+      operationId: operationId,
     );
+
+    // Create timeline item and sync in background
+    final timelineItem = TimelineItem.task(task);
+    
+    _optimisticSyncService.syncTimelineItemCreation(timelineItem, operationId).then((_) {
+      // After item is created, add it to the day
+      return _addItemToDayUseCase(itemId: taskId, day: day);
+    }).then((addResult) {
+      addResult.fold(
+        (failure) {
+          print('❌ [TimelineCubit] Failed to add item to day: ${failure.toString()}');
+          _removeOptimisticOperation(operationId);
+        },
+        (_) {
+          print('✅ [TimelineCubit] Task creation completed successfully');
+          _removeOptimisticOperation(operationId);
+        },
+      );
+    }).catchError((error) {
+      print('❌ [TimelineCubit] Task creation sync failed: $error');
+      _removeOptimisticOperation(operationId);
+    });
   }
 
   // Transformation methods for smart text input
   Future<void> transformNoteToTask({required String noteId, required String taskTitle}) async {
-    print('🔍 [TimelineCubit] transformNoteToTask called - noteId: $noteId, title: "$taskTitle"');
+    print('🚀 [TimelineCubit] transformNoteToTask - OPTIMISTIC UPDATE');
 
     if (_selectedProject == null) {
-      print('❌ [TimelineCubit] No project selected');
       emit(const TimelineState.error(failure: Failure.validationFailure(message: 'No project selected')));
       return;
     }
 
     final now = DateTime.now();
+    final operationId = 'transform_note_to_task_${noteId}_${now.millisecondsSinceEpoch}';
+
     final task = Task(
       id: noteId,
       // Keep the same ID
@@ -472,18 +642,18 @@ class TimelineCubit extends Cubit<TimelineState> {
       isCompleted: false,
     );
 
-    final timelineItem = TimelineItem.task(task);
-    final result = await _updateTimelineItemUseCase(timelineItem);
+    // Apply optimistic update immediately (transformations are handled by the stream)
+    _addPendingOperation(operationId);
 
-    result.fold(
-      (failure) {
-        print('❌ [TimelineCubit] Failed to transform note to task: ${failure.toString()}');
-        emit(TimelineState.error(failure: failure));
-      },
-      (_) {
-        print('✅ [TimelineCubit] Note transformed to task successfully');
-      }, // Items will be automatically updated through stream
-    );
+    // Sync in background
+    final timelineItem = TimelineItem.task(task);
+    _optimisticSyncService.syncTimelineItemUpdate(timelineItem, operationId).then((_) {
+      print('✅ [TimelineCubit] Note to task transformation completed successfully');
+      _removeOptimisticOperation(operationId);
+    }).catchError((error) {
+      print('❌ [TimelineCubit] Note to task transformation sync failed: $error');
+      _removeOptimisticOperation(operationId);
+    });
   }
 
   Future<void> transformTaskToNote({
@@ -491,15 +661,16 @@ class TimelineCubit extends Cubit<TimelineState> {
     required String noteContent,
     required NoteType noteType,
   }) async {
-    print('🔍 [TimelineCubit] transformTaskToNote called - taskId: $taskId, content: "$noteContent", type: $noteType');
+    print('🚀 [TimelineCubit] transformTaskToNote - OPTIMISTIC UPDATE');
 
     if (_selectedProject == null) {
-      print('❌ [TimelineCubit] No project selected');
       emit(const TimelineState.error(failure: Failure.validationFailure(message: 'No project selected')));
       return;
     }
 
     final now = DateTime.now();
+    final operationId = 'transform_task_to_note_${taskId}_${now.millisecondsSinceEpoch}';
+
     final note = Note(
       id: taskId,
       // Keep the same ID
@@ -509,65 +680,81 @@ class TimelineCubit extends Cubit<TimelineState> {
       type: noteType,
     );
 
-    final timelineItem = TimelineItem.note(note);
-    final result = await _updateTimelineItemUseCase(timelineItem);
+    // Apply optimistic update immediately (transformations are handled by the stream)
+    _addPendingOperation(operationId);
 
-    result.fold(
-      (failure) {
-        print('❌ [TimelineCubit] Failed to transform task to note: ${failure.toString()}');
-        emit(TimelineState.error(failure: failure));
-      },
-      (_) {
-        print('✅ [TimelineCubit] Task transformed to note successfully');
-      }, // Items will be automatically updated through stream
-    );
+    // Sync in background
+    final timelineItem = TimelineItem.note(note);
+    _optimisticSyncService.syncTimelineItemUpdate(timelineItem, operationId).then((_) {
+      print('✅ [TimelineCubit] Task to note transformation completed successfully');
+      _removeOptimisticOperation(operationId);
+    }).catchError((error) {
+      print('❌ [TimelineCubit] Task to note transformation sync failed: $error');
+      _removeOptimisticOperation(operationId);
+    });
   }
 
   Future<void> transformNoteType({required String noteId, required String content, required NoteType newType}) async {
-    print('🔍 [TimelineCubit] transformNoteType called - noteId: $noteId, content: "$content", newType: $newType');
+    print('🚀 [TimelineCubit] transformNoteType - OPTIMISTIC UPDATE');
 
     if (_selectedProject == null) {
-      print('❌ [TimelineCubit] No project selected');
       emit(const TimelineState.error(failure: Failure.validationFailure(message: 'No project selected')));
       return;
     }
 
     final now = DateTime.now();
+    final operationId = 'transform_note_type_${noteId}_${now.millisecondsSinceEpoch}';
+
     final note = Note(
       id: noteId,
-      // Keep the same ID
       createdAt: now,
       updatedAt: now,
       content: content,
       type: newType,
     );
 
-    final timelineItem = TimelineItem.note(note);
-    final result = await _updateTimelineItemUseCase(timelineItem);
+    // Apply optimistic update immediately (transformations are handled by the stream)
+    _addPendingOperation(operationId);
 
-    result.fold(
-      (failure) {
-        print('❌ [TimelineCubit] Failed to transform note type: ${failure.toString()}');
-        emit(TimelineState.error(failure: failure));
-      },
-      (_) {
-        print('✅ [TimelineCubit] Note type transformed successfully');
-      }, // Items will be automatically updated through stream
-    );
+    // Sync in background
+    final timelineItem = TimelineItem.note(note);
+    _optimisticSyncService.syncTimelineItemUpdate(timelineItem, operationId).then((_) {
+      print('✅ [TimelineCubit] Note type transformation completed successfully');
+      _removeOptimisticOperation(operationId);
+    }).catchError((error) {
+      print('❌ [TimelineCubit] Note type transformation sync failed: $error');
+      _removeOptimisticOperation(operationId);
+    });
   }
 
   Future<void> deleteItemFromDay({required String itemId, required Day day}) async {
-    final removeResult = await _removeItemFromDayUseCase(itemId: itemId, day: day);
-    await removeResult.fold(
-      (failure) async => emit(TimelineState.error(failure: failure)),
-      (_) async {
-        final deleteResult = await _deleteTimelineItemUseCase(itemId);
-        deleteResult.fold(
-          (failure) => emit(TimelineState.error(failure: failure)),
-          (_) {},
-        );
-      },
+    print('🚀 [TimelineCubit] deleteItemFromDay - OPTIMISTIC UPDATE');
+
+    final currentState = state;
+    if (currentState is! TimelineLoaded) return;
+
+    // Generate operation ID
+    final operationId = 'delete_${itemId}_${DateTime.now().millisecondsSinceEpoch}';
+
+    // Apply optimistic update immediately
+    _applyOptimisticItemDeletion(
+      itemId: itemId,
+      day: day,
+      operationId: operationId,
     );
+
+    // Sync in background
+    _optimisticSyncService.syncItemDeletion(
+      itemId: itemId,
+      day: day,
+      operationId: operationId,
+    ).then((_) {
+      print('✅ [TimelineCubit] Item deletion completed successfully');
+      _removeOptimisticOperation(operationId);
+    }).catchError((error) {
+      print('❌ [TimelineCubit] Item deletion sync failed: $error');
+      _removeOptimisticOperation(operationId);
+    });
   }
 
   // Getters for easy access

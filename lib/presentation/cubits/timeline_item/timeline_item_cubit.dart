@@ -18,6 +18,7 @@ class TimelineItemCubit extends Cubit<TimelineItemState> {
   final DeleteTimelineItemUseCase _deleteTimelineItemUseCase;
 
   StreamSubscription? _subscription;
+  final Stream<TimelineItem>? _itemStream = Stream.empty(broadcast: true);
 
   TimelineItemCubit({
     required this.itemId,
@@ -41,14 +42,9 @@ class TimelineItemCubit extends Cubit<TimelineItemState> {
   Future<void> _loadInitialItem() async {
     try {
       final result = await _getTimelineItemUseCase(itemId);
-      result.fold(
-        (failure) => emit(TimelineItemState.error(failure)),
-        (item) => emit(TimelineItemState.loaded(item)),
-      );
+      result.fold((failure) => emit(TimelineItemState.error(failure)), (item) => emit(TimelineItemState.loaded(item)));
     } catch (e) {
-      emit(TimelineItemState.error(
-        Failure.unknownFailure(message: e.toString()),
-      ));
+      emit(TimelineItemState.error(Failure.unknownFailure(message: e.toString())));
     }
   }
 
@@ -63,6 +59,7 @@ class TimelineItemCubit extends Cubit<TimelineItemState> {
   }
 
   Future<void> updateItem(TimelineItem updatedItem) async {
+    emit(TimelineItemState.loaded(updatedItem));
     final result = await _updateTimelineItemUseCase(updatedItem);
     result.fold(
       (failure) => emit(TimelineItemState.error(failure)),

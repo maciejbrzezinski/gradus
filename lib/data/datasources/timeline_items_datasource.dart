@@ -33,25 +33,25 @@ class TimelineItemsDataSource {
     }
   }
 
-  CollectionReference get _timelineItemsCollection => 
-    _firestore.collection('users').doc(_userId).collection('timeline_items');
+  CollectionReference get _timelineItemsCollection =>
+      _firestore.collection('users').doc(_userId).collection('timeline_items');
 
   Stream<TimelineItem> watchTimelineItem(String itemId) {
     _logger.i('🔍 [TimelineItemsDataSource] watchTimelineItem - itemId: $itemId');
-    
+
     // Initialize Firestore stream if not already done
     _initializeFirestoreStream();
-    
+
     // Return filtered stream for specific item ID
     return _itemsController.stream.where((item) => item.id == itemId);
   }
 
   void _initializeFirestoreStream() {
     if (_firestoreStreamInitialized) return;
-    
+
     _firestoreStreamInitialized = true;
     _logger.i('🔄 [TimelineItemsDataSource] Initializing Firestore stream');
-    
+
     // Listen to all changes in the timeline items collection
     _timelineItemsCollection.snapshots().listen(
       (snapshot) {
@@ -75,20 +75,40 @@ class TimelineItemsDataSource {
 
   Future<TimelineItem> getTimelineItem(String itemId) async {
     _logger.i('📋 [TimelineItemsDataSource] getTimelineItem - itemId: $itemId');
-    
+
     try {
-      final doc = await _timelineItemsCollection.doc(itemId).get();
-      
+      final doc = await _timelineItemsCollection.doc(itemId).get(GetOptions(source: Source.cache));
+
       if (!doc.exists) {
         _logger.e('❌ [TimelineItemsDataSource] getTimelineItem - timeline item not found: $itemId');
         throw Exception('Timeline item not found: $itemId');
       }
-      
+
       final item = _mapDocToTimelineItem(doc);
       _logger.i('✅ [TimelineItemsDataSource] getTimelineItem - found item: $itemId, type: ${item.runtimeType}');
-      
+
       return item;
     } catch (e) {
+      if (e is FirebaseException && e.code == 'not-found') {
+        try {
+          _logger.e('❌ [TimelineItemsDataSource] getTimelineItem - item not found in cache, trying network: $itemId');
+          final doc = await _timelineItemsCollection.doc(itemId).get(GetOptions(source: Source.server));
+          if (!doc.exists) {
+            throw Exception('Timeline item not found: $itemId');
+          }
+          final item = _mapDocToTimelineItem(doc);
+          _logger.i(
+            '✅ [TimelineItemsDataSource] getTimelineItem - found item from network: $itemId, type: ${item.runtimeType}',
+          );
+          return item;
+        } catch (networkError) {
+          _logger.e(
+            '❌ [TimelineItemsDataSource] getTimelineItem - error fetching from network: $itemId',
+            error: networkError,
+          );
+          rethrow;
+        }
+      }
       _logger.e('❌ [TimelineItemsDataSource] getTimelineItem - error fetching item: $itemId', error: e);
       rethrow;
     }
@@ -97,16 +117,16 @@ class TimelineItemsDataSource {
   Future<void> createTimelineItem(TimelineItem item) async {
     final itemType = item.when(task: (_) => 'task', note: (_) => 'note');
     _logger.i('➕ [TimelineItemsDataSource] createTimelineItem - id: ${item.id}, type: $itemType');
-    
+
     // 1. Immediately add to stream for instant UI update
     _itemsController.add(item);
     _logger.d('⚡ [TimelineItemsDataSource] Added item to stream instantly: ${item.id}');
-    
+
     try {
       // 2. Save to Firestore in background
       final data = _mapTimelineItemToData(item);
       await _timelineItemsCollection.doc(item.id).set(data);
-      
+
       _logger.i('✅ [TimelineItemsDataSource] createTimelineItem - successfully created item: ${item.id}');
     } catch (e) {
       _logger.e('❌ [TimelineItemsDataSource] createTimelineItem - error creating item: ${item.id}', error: e);
@@ -117,11 +137,11 @@ class TimelineItemsDataSource {
   Future<void> updateTimelineItem(TimelineItem item) async {
     final itemType = item.when(task: (_) => 'task', note: (_) => 'note');
     _logger.i('✏️ [TimelineItemsDataSource] updateTimelineItem - id: ${item.id}, type: $itemType');
-    
+
     // 1. Immediately add to stream for instant UI update
     _itemsController.add(item);
     _logger.d('⚡ [TimelineItemsDataSource] Updated item in stream instantly: ${item.id}');
-    
+
     try {
       // 2. Check if item exists and update in Firestore
       final doc = await _timelineItemsCollection.doc(item.id).get();
@@ -129,10 +149,10 @@ class TimelineItemsDataSource {
         _logger.e('❌ [TimelineItemsDataSource] updateTimelineItem - timeline item not found: ${item.id}');
         throw Exception('Timeline item not found: ${item.id}');
       }
-      
+
       final data = _mapTimelineItemToData(item);
       await _timelineItemsCollection.doc(item.id).update(data);
-      
+
       _logger.i('✅ [TimelineItemsDataSource] updateTimelineItem - successfully updated item: ${item.id}');
     } catch (e) {
       _logger.e('❌ [TimelineItemsDataSource] updateTimelineItem - error updating item: ${item.id}', error: e);
@@ -142,16 +162,16 @@ class TimelineItemsDataSource {
 
   Future<void> deleteTimelineItem(String itemId) async {
     _logger.i('🗑️ [TimelineItemsDataSource] deleteTimelineItem - itemId: $itemId');
-    
+
     try {
       final doc = await _timelineItemsCollection.doc(itemId).get();
       if (!doc.exists) {
         _logger.e('❌ [TimelineItemsDataSource] deleteTimelineItem - timeline item not found: $itemId');
         throw Exception('Timeline item not found: $itemId');
       }
-      
+
       await _timelineItemsCollection.doc(itemId).delete();
-      
+
       _logger.i('✅ [TimelineItemsDataSource] deleteTimelineItem - successfully deleted item: $itemId');
     } catch (e) {
       _logger.e('❌ [TimelineItemsDataSource] deleteTimelineItem - error deleting item: $itemId', error: e);
@@ -161,7 +181,7 @@ class TimelineItemsDataSource {
 
   TimelineItem _mapDataToTimelineItem(Map<String, dynamic> data) {
     final type = data['type'] as String;
-    
+
     switch (type) {
       case 'task':
         final task = Task(

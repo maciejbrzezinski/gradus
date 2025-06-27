@@ -29,9 +29,9 @@ class TimelinePage extends StatelessWidget {
                     return state.when(
                       initial: () => _buildLoadingState(),
                       loading: () => _buildLoadingState(),
-                      loaded: (days, selectedProject, availableProjects) {
+                      loaded: (days, selectedProject, availableProjects, pendingOperations, optimisticDays) {
                         return TimelineView(
-                          days: days,
+                          days: state.effectiveDays,
                           selectedProject: selectedProject,
                           onLoadMoreDays: (loadPrevious) {
                             context.read<TimelineCubit>().loadMoreDays(loadPrevious: loadPrevious);
