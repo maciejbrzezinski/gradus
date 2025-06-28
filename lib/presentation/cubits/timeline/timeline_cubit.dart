@@ -640,16 +640,18 @@ class TimelineCubit extends Cubit<TimelineState> {
 
     final note = Note(id: noteId, createdAt: now, updatedAt: now, content: content, type: type);
 
+    // Create timeline item for optimistic update
+    final timelineItem = TimelineItem.note(note);
+
     // Apply optimistic update immediately
     _applyOptimisticItemCreation(
       itemId: noteId,
       day: day,
       operationId: operationId,
+      optimisticItem: timelineItem,
     );
 
-    // Create timeline item and sync in background
-    final timelineItem = TimelineItem.note(note);
-    
+    // Sync in background
     _optimisticSyncService.syncTimelineItemCreation(timelineItem, operationId).then((_) {
       // After item is created, add it to the day
       return _addItemToDayUseCase(itemId: noteId, day: day);
@@ -692,16 +694,18 @@ class TimelineCubit extends Cubit<TimelineState> {
 
     final task = Task(id: taskId, createdAt: now, updatedAt: now, title: title, isCompleted: false);
 
+    // Create timeline item for optimistic update
+    final timelineItem = TimelineItem.task(task);
+
     // Apply optimistic update immediately
     _applyOptimisticItemCreation(
       itemId: taskId,
       day: day,
       operationId: operationId,
+      optimisticItem: timelineItem,
     );
 
-    // Create timeline item and sync in background
-    final timelineItem = TimelineItem.task(task);
-    
+    // Sync in background
     _optimisticSyncService.syncTimelineItemCreation(timelineItem, operationId).then((_) {
       // After item is created, add it to the day
       return _addItemToDayUseCase(itemId: taskId, day: day);
