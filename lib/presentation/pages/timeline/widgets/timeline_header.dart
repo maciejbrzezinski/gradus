@@ -50,7 +50,7 @@ class TimelineHeader extends StatelessWidget {
                     height: AppTheme.spacing20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  loaded: (days, selectedProject, availableProjects, _, _) {
+                  loaded: (days, selectedProject, availableProjects, _, __, ___) {
                     return AnimatedProjectTabs(
                       selectedProject: selectedProject,
                       availableProjects: availableProjects,

@@ -29,7 +29,7 @@ class TimelinePage extends StatelessWidget {
                     return state.when(
                       initial: () => _buildLoadingState(),
                       loading: () => _buildLoadingState(),
-                      loaded: (days, selectedProject, availableProjects, pendingOperations, optimisticDays) {
+                      loaded: (days, selectedProject, availableProjects, pendingOperations, optimisticDays, cachedItems) {
                         return TimelineView(
                           days: state.effectiveDays,
                           selectedProject: selectedProject,

@@ -7,7 +7,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/note.dart';
 import '../../../domain/entities/note_type.dart';
 import '../../../core/utils/text_commands.dart';
-import '../../cubits/timeline_item/timeline_item_cubit.dart';
 import '../../cubits/timeline/timeline_cubit.dart';
 import '../../cubits/focus/focus_cubit.dart';
 import '../shared/timeline_item_editing_mixin.dart';
@@ -24,11 +23,13 @@ class NoteCard extends StatefulWidget {
 
 class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
   String _originalContent = '';
+  String _currentContent = '';
 
   @override
   void initState() {
     super.initState();
     _originalContent = widget.note.content;
+    _currentContent = widget.note.content;
     setupSmartTextController(initialText: _originalContent);
 
     // Auto-enter edit mode if content is empty (newly created item)
@@ -36,6 +37,16 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _startEditing();
       });
+    }
+  }
+
+  @override
+  void didUpdateWidget(NoteCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update current content when the widget updates (e.g., from stream)
+    if (widget.note.content != oldWidget.note.content) {
+      _currentContent = widget.note.content;
+      _originalContent = widget.note.content;
     }
   }
 
@@ -62,22 +73,33 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
       // Regular Enter - create new note of same type
       final currentContent = textController.text.trim();
       if (currentContent.isNotEmpty) {
-        // Save current changes first
+
+        // Save current changes first and update the original content
         saveChanges(currentContent);
+        _currentContent = currentContent;
+        _originalContent = currentContent;
 
         // Determine the item type based on current note type
         final itemType = _noteTypeToItemType(widget.note.type);
 
-        // Create new note after current one
+        // Create new note after current one and set focus to it
         context.read<TimelineCubit>().createItemAfterCurrent(
           currentItemId: widget.note.id,
           day: widget.day,
           itemType: itemType,
           content: '',
-        );
-
-        // Exit edit mode
-        setEditingState(false);
+        ).then((newItemId) {
+          if (newItemId != null && mounted) {
+            // Set focus to the newly created item
+            context.read<FocusCubit>().setFocus(newItemId);
+          }
+          
+          // Reset the flag and exit edit mode
+          if (mounted) {
+            setEditingState(false);
+          }
+        }).catchError((error) {
+        });
       }
     }
     // Shift+Enter is handled by the TextFormField naturally (new line)
@@ -97,8 +119,9 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
   void saveChanges(String newContent) {
     if (newContent.trim() != _originalContent && newContent.trim().isNotEmpty) {
       final updatedNote = widget.note.copyWith(content: newContent.trim());
-      context.read<TimelineItemCubit>().updateItem(TimelineItem.note(updatedNote));
+      context.read<TimelineCubit>().updateTimelineItem(TimelineItem.note(updatedNote));
       _originalContent = newContent.trim();
+      _currentContent = newContent.trim();
     }
   }
 
@@ -123,6 +146,11 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
 
   @override
   String getCurrentItemId() => widget.note.id;
+
+  @override
+  TextStyle getCurrentTextStyle() {
+    return _getNoteTextStyle(context) ?? Theme.of(context).textTheme.bodyMedium ?? const TextStyle(fontSize: 14);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -171,7 +199,7 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
   Widget _buildNoteContent(BuildContext context, {bool isDragging = false}) {
     return isEditing
         ? buildEditingInput(context: context, style: _getNoteTextStyle(context))
-        : Text(widget.note.content, style: _getNoteTextStyle(context));
+        : Text(_currentContent, style: _getNoteTextStyle(context));
   }
 
   TextStyle? _getNoteTextStyle(BuildContext context) {

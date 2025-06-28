@@ -6,7 +6,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/day.dart';
 import '../../../domain/entities/task.dart';
 import '../../../core/utils/text_commands.dart';
-import '../../cubits/timeline_item/timeline_item_cubit.dart';
 import '../../cubits/timeline/timeline_cubit.dart';
 import '../../cubits/focus/focus_cubit.dart';
 import '../shared/timeline_item_editing_mixin.dart';
@@ -67,19 +66,29 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
       // Regular Enter - create new task of same type
       final currentContent = textController.text.trim();
       if (currentContent.isNotEmpty) {
+
         // Save current changes first
         saveChanges(currentContent);
+        _originalTitle = currentContent;
         
-        // Create new task after current one
+        // Create new task after current one and set focus to it
         context.read<TimelineCubit>().createItemAfterCurrent(
           currentItemId: widget.task.id,
           day: widget.day,
           itemType: ItemType.task,
           content: '',
-        );
-        
-        // Exit edit mode
-        setEditingState(false);
+        ).then((newItemId) {
+          if (newItemId != null && mounted) {
+            // Set focus to the newly created item
+            context.read<FocusCubit>().setFocus(newItemId);
+          }
+          
+          // Reset the flag and exit edit mode
+          if (mounted) {
+            setEditingState(false);
+          }
+        }).catchError((error) {
+        });
       }
     }
     // Shift+Enter is handled by the TextFormField naturally (new line)
@@ -101,7 +110,7 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
   void saveChanges(String newTitle) {
     if (newTitle.trim() != _originalTitle && newTitle.trim().isNotEmpty) {
       final updatedTask = widget.task.copyWith(title: newTitle.trim());
-      context.read<TimelineItemCubit>().updateItem(TimelineItem.task(updatedTask));
+      context.read<TimelineCubit>().updateTimelineItem(TimelineItem.task(updatedTask));
       _originalTitle = newTitle.trim();
     }
   }
@@ -114,6 +123,17 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
 
   @override
   String getCurrentItemId() => widget.task.id;
+
+  @override
+  TextStyle getCurrentTextStyle() {
+    return Theme.of(context).textTheme.bodyMedium?.copyWith(
+      decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
+      color: widget.task.isCompleted 
+        ? AppTheme.textSecondary 
+        : AppTheme.textPrimary,
+      fontWeight: FontWeight.w500,
+    ) ?? const TextStyle(fontSize: 14);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +199,7 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
         GestureDetector(
           onTap: () {
             final updatedTask = widget.task.copyWith(isCompleted: !widget.task.isCompleted);
-            context.read<TimelineItemCubit>().updateItem(TimelineItem.task(updatedTask));
+            context.read<TimelineCubit>().updateTimelineItem(TimelineItem.task(updatedTask));
           },
           child: Container(
             width: 20,

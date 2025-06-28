@@ -58,8 +58,6 @@ import 'package:gradus/presentation/cubits/auth/auth_cubit.dart' as _i858;
 import 'package:gradus/presentation/cubits/focus/focus_cubit.dart' as _i837;
 import 'package:gradus/presentation/cubits/timeline/timeline_cubit.dart'
     as _i293;
-import 'package:gradus/presentation/cubits/timeline_item/timeline_item_cubit_factory.dart'
-    as _i601;
 import 'package:injectable/injectable.dart' as _i526;
 
 extension GetItInjectableX on _i174.GetIt {
@@ -175,18 +173,12 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i68.WatchProjectsUseCase>(),
         gh<_i654.GetProjectByIdUseCase>(),
         gh<_i939.CreateTimelineItemUseCase>(),
-        gh<_i1003.UpdateTimelineItemUseCase>(),
-        gh<_i431.DeleteTimelineItemUseCase>(),
-        gh<_i91.AuthService>(),
-        gh<_i136.OptimisticSyncService>(),
-      ),
-    );
-    gh.factory<_i601.TimelineItemCubitFactory>(
-      () => _i601.TimelineItemCubitFactory(
         gh<_i172.GetTimelineItemUseCase>(),
         gh<_i484.WatchTimelineItemUseCase>(),
         gh<_i1003.UpdateTimelineItemUseCase>(),
         gh<_i431.DeleteTimelineItemUseCase>(),
+        gh<_i91.AuthService>(),
+        gh<_i136.OptimisticSyncService>(),
       ),
     );
     return this;

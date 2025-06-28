@@ -15,6 +15,8 @@ import '../../../domain/usecases/projects/get_projects_usecase.dart';
 import '../../../domain/usecases/projects/watch_projects_usecase.dart';
 import '../../../domain/usecases/projects/get_project_by_id_usecase.dart';
 import '../../../domain/usecases/timeline_items/create_timeline_item_usecase.dart';
+import '../../../domain/usecases/timeline_items/get_timeline_item_usecase.dart';
+import '../../../domain/usecases/timeline_items/watch_timeline_item_usecase.dart';
 import '../../../domain/entities/note.dart';
 import '../../../domain/entities/task.dart';
 import '../../../domain/entities/note_type.dart';
@@ -36,6 +38,8 @@ class TimelineCubit extends Cubit<TimelineState> {
   final WatchProjectsUseCase _watchProjectsUseCase;
   final GetProjectByIdUseCase _getProjectByIdUseCase;
   final CreateTimelineItemUseCase _createTimelineItemUseCase;
+  final GetTimelineItemUseCase _getTimelineItemUseCase;
+  final WatchTimelineItemUseCase _watchTimelineItemUseCase;
   final UpdateTimelineItemUseCase _updateTimelineItemUseCase;
   final DeleteTimelineItemUseCase _deleteTimelineItemUseCase;
   final AuthService _authService;
@@ -43,6 +47,7 @@ class TimelineCubit extends Cubit<TimelineState> {
 
   StreamSubscription? _daysSubscription;
   StreamSubscription? _projectsSubscription;
+  final Map<String, StreamSubscription> _itemSubscriptions = {};
   Project? _selectedProject;
   List<Project> _availableProjects = [];
   DateTime _currentStartDate = DateTime.now().subtract(const Duration(days: 7));
@@ -58,6 +63,8 @@ class TimelineCubit extends Cubit<TimelineState> {
     this._watchProjectsUseCase,
     this._getProjectByIdUseCase,
     this._createTimelineItemUseCase,
+    this._getTimelineItemUseCase,
+    this._watchTimelineItemUseCase,
     this._updateTimelineItemUseCase,
     this._deleteTimelineItemUseCase,
     this._authService,
@@ -140,15 +147,92 @@ class TimelineCubit extends Cubit<TimelineState> {
             startDate: _currentStartDate,
             endDate: _currentEndDate,
           ).listen((days) {
-            emit(
-              TimelineState.loaded(
+            final currentState = state;
+            if (currentState is TimelineLoaded) {
+              // Update timeline item watching based on new days
+              _updateTimelineItemWatching(days);
+              
+              emit(currentState.copyWith(
                 days: days,
-                selectedProject: _selectedProject,
-                availableProjects: _availableProjects,
-              ),
-            );
+              ));
+            } else {
+              emit(
+                TimelineState.loaded(
+                  days: days,
+                  selectedProject: _selectedProject,
+                  availableProjects: _availableProjects,
+                ),
+              );
+              // Start watching timeline items for initial load
+              _updateTimelineItemWatching(days);
+            }
           });
     }
+  }
+
+  void _updateTimelineItemWatching(List<Day> days) {
+    // Get all item IDs from all days
+    final allItemIds = <String>{};
+    for (final day in days) {
+      allItemIds.addAll(day.itemIds);
+    }
+
+    // Cancel subscriptions for items that are no longer visible
+    final itemsToRemove = _itemSubscriptions.keys.where((itemId) => !allItemIds.contains(itemId)).toList();
+    for (final itemId in itemsToRemove) {
+      _itemSubscriptions[itemId]?.cancel();
+      _itemSubscriptions.remove(itemId);
+    }
+
+    // Start watching new items
+    for (final itemId in allItemIds) {
+      if (!_itemSubscriptions.containsKey(itemId)) {
+        _startWatchingTimelineItem(itemId);
+      }
+    }
+  }
+
+  void _startWatchingTimelineItem(String itemId) {
+    _itemSubscriptions[itemId] = _watchTimelineItemUseCase(itemId).listen(
+      (item) {
+        _updateCachedItem(itemId, item);
+      },
+      onError: (error) {
+        print('❌ [TimelineCubit] Error watching timeline item $itemId: $error');
+        // Try to load the item once
+        _loadTimelineItem(itemId);
+      },
+    );
+  }
+
+  Future<void> _loadTimelineItem(String itemId) async {
+    final result = await _getTimelineItemUseCase(itemId);
+    result.fold(
+      (failure) {
+        print('❌ [TimelineCubit] Failed to load timeline item $itemId: ${failure.toString()}');
+      },
+      (item) {
+        _updateCachedItem(itemId, item);
+      },
+    );
+  }
+
+  void _updateCachedItem(String itemId, TimelineItem item) {
+    final currentState = state;
+    if (currentState is TimelineLoaded) {
+      final updatedCachedItems = Map<String, TimelineItem>.from(currentState.cachedItems);
+      updatedCachedItems[itemId] = item;
+      
+      emit(currentState.copyWith(cachedItems: updatedCachedItems));
+    }
+  }
+
+  TimelineItem? getCachedItem(String itemId) {
+    final currentState = state;
+    if (currentState is TimelineLoaded) {
+      return currentState.cachedItems[itemId];
+    }
+    return null;
   }
 
   Future<void> switchProject(String projectId) async {
@@ -326,6 +410,7 @@ class TimelineCubit extends Cubit<TimelineState> {
     required Day day,
     required String operationId,
     int? insertIndex,
+    TimelineItem? optimisticItem,
   }) {
     final currentState = state;
     if (currentState is! TimelineLoaded) return;
@@ -344,10 +429,17 @@ class TimelineCubit extends Cubit<TimelineState> {
     Map<String, Day> optimisticDays = Map.from(currentState.optimisticDays);
     optimisticDays[dayKey] = updatedDay;
 
+    // Add optimistic item to cache to prevent loading state
+    Map<String, TimelineItem> updatedCachedItems = Map.from(currentState.cachedItems);
+    if (optimisticItem != null) {
+      updatedCachedItems[itemId] = optimisticItem;
+    }
+
     // Update state with optimistic changes
     emit(currentState.copyWith(
       pendingOperations: {...currentState.pendingOperations, operationId},
       optimisticDays: optimisticDays,
+      cachedItems: updatedCachedItems,
     ));
   }
 
@@ -374,7 +466,7 @@ class TimelineCubit extends Cubit<TimelineState> {
     ));
   }
 
-  Future<void> createItemAfterCurrent({
+  Future<String?> createItemAfterCurrent({
     required String currentItemId,
     required Day day,
     required ItemType itemType,
@@ -387,26 +479,27 @@ class TimelineCubit extends Cubit<TimelineState> {
     if (currentIndex == -1) {
       print('❌ [TimelineCubit] Current item not found in day');
       emit(const TimelineState.error(failure: Failure.validationFailure(message: 'Current item not found')));
-      return;
+      return null;
     }
 
     final insertIndex = currentIndex + 1;
     print('🔍 [TimelineCubit] Will insert new item at index: $insertIndex');
 
-    // Create the appropriate item type
+    // Create the appropriate item type and return the new item ID
     if (itemType == ItemType.task) {
-      await _createTaskAtPosition(title: content ?? '', day: day, insertIndex: insertIndex);
+      return await _createTaskAtPosition(title: content ?? '', day: day, insertIndex: insertIndex);
     } else if (itemType.isHeadline || itemType == ItemType.textNote) {
-      await _createNoteAtPosition(
+      return await _createNoteAtPosition(
         content: content ?? '',
         type: itemType.toNoteType(),
         day: day,
         insertIndex: insertIndex,
       );
     }
+    return null;
   }
 
-  Future<void> _createTaskAtPosition({required String title, required Day day, required int insertIndex}) async {
+  Future<String> _createTaskAtPosition({required String title, required Day day, required int insertIndex}) async {
     print('🚀 [TimelineCubit] _createTaskAtPosition - OPTIMISTIC UPDATE');
 
     // Ensure user is authenticated
@@ -414,12 +507,12 @@ class TimelineCubit extends Cubit<TimelineState> {
       await _authService.ensureAuthenticated();
     } catch (e) {
       emit(TimelineState.error(failure: Failure.unknownFailure(message: 'Authentication failed: $e')));
-      return;
+      return '';
     }
 
     if (_selectedProject == null) {
       emit(const TimelineState.error(failure: Failure.validationFailure(message: 'No project selected')));
-      return;
+      return '';
     }
 
     final now = DateTime.now();
@@ -428,17 +521,19 @@ class TimelineCubit extends Cubit<TimelineState> {
 
     final task = Task(id: taskId, createdAt: now, updatedAt: now, title: title, isCompleted: false);
 
+    // Create timeline item for optimistic update
+    final timelineItem = TimelineItem.task(task);
+
     // Apply optimistic update immediately
     _applyOptimisticItemCreation(
       itemId: taskId,
       day: day,
       operationId: operationId,
       insertIndex: insertIndex,
+      optimisticItem: timelineItem,
     );
 
-    // Create timeline item and sync in background
-    final timelineItem = TimelineItem.task(task);
-    
+    // Sync in background
     _optimisticSyncService.syncTimelineItemCreation(timelineItem, operationId).then((_) {
       // After item is created, add it to the day at the specific position
       return _addItemToDayUseCase(itemId: taskId, day: day, index: insertIndex);
@@ -457,9 +552,11 @@ class TimelineCubit extends Cubit<TimelineState> {
       print('❌ [TimelineCubit] Task creation at position sync failed: $error');
       _removeOptimisticOperation(operationId);
     });
+
+    return taskId;
   }
 
-  Future<void> _createNoteAtPosition({
+  Future<String> _createNoteAtPosition({
     required String content,
     required NoteType type,
     required Day day,
@@ -472,12 +569,12 @@ class TimelineCubit extends Cubit<TimelineState> {
       await _authService.ensureAuthenticated();
     } catch (e) {
       emit(TimelineState.error(failure: Failure.unknownFailure(message: 'Authentication failed: $e')));
-      return;
+      return '';
     }
 
     if (_selectedProject == null) {
       emit(const TimelineState.error(failure: Failure.validationFailure(message: 'No project selected')));
-      return;
+      return '';
     }
 
     final now = DateTime.now();
@@ -486,17 +583,19 @@ class TimelineCubit extends Cubit<TimelineState> {
 
     final note = Note(id: noteId, createdAt: now, updatedAt: now, content: content, type: type);
 
+    // Create timeline item for optimistic update
+    final timelineItem = TimelineItem.note(note);
+
     // Apply optimistic update immediately
     _applyOptimisticItemCreation(
       itemId: noteId,
       day: day,
       operationId: operationId,
       insertIndex: insertIndex,
+      optimisticItem: timelineItem,
     );
 
-    // Create timeline item and sync in background
-    final timelineItem = TimelineItem.note(note);
-    
+    // Sync in background
     _optimisticSyncService.syncTimelineItemCreation(timelineItem, operationId).then((_) {
       // After item is created, add it to the day at the specific position
       return _addItemToDayUseCase(itemId: noteId, day: day, index: insertIndex);
@@ -515,6 +614,8 @@ class TimelineCubit extends Cubit<TimelineState> {
       print('❌ [TimelineCubit] Note creation at position sync failed: $error');
       _removeOptimisticOperation(operationId);
     });
+
+    return noteId;
   }
 
   Future<void> createNote({required String content, required NoteType type, required Day day}) async {
@@ -757,6 +858,33 @@ class TimelineCubit extends Cubit<TimelineState> {
     });
   }
 
+  Future<void> updateTimelineItem(TimelineItem item) async {
+    print('🚀 [TimelineCubit] updateTimelineItem - OPTIMISTIC UPDATE');
+
+    final currentState = state;
+    if (currentState is! TimelineLoaded) return;
+
+    final operationId = 'update_item_${item.id}_${DateTime.now().millisecondsSinceEpoch}';
+    
+    // Apply optimistic update to cached items
+    final updatedCachedItems = Map<String, TimelineItem>.from(currentState.cachedItems);
+    updatedCachedItems[item.id] = item;
+    
+    emit(currentState.copyWith(
+      cachedItems: updatedCachedItems,
+      pendingOperations: {...currentState.pendingOperations, operationId},
+    ));
+
+    // Sync in background
+    _optimisticSyncService.syncTimelineItemUpdate(item, operationId).then((_) {
+      print('✅ [TimelineCubit] Item update completed successfully');
+      _removeOptimisticOperation(operationId);
+    }).catchError((error) {
+      print('❌ [TimelineCubit] Item update sync failed: $error');
+      _removeOptimisticOperation(operationId);
+    });
+  }
+
   // Getters for easy access
   Project? get selectedProject => _selectedProject;
 
@@ -768,6 +896,13 @@ class TimelineCubit extends Cubit<TimelineState> {
   Future<void> close() {
     _daysSubscription?.cancel();
     _projectsSubscription?.cancel();
+    
+    // Cancel all timeline item subscriptions
+    for (final subscription in _itemSubscriptions.values) {
+      subscription.cancel();
+    }
+    _itemSubscriptions.clear();
+    
     return super.close();
   }
 }

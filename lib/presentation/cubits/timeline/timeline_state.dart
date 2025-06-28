@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../../core/error/failure.dart';
 import '../../../domain/entities/day.dart';
 import '../../../domain/entities/project.dart';
+import '../../../domain/entities/timeline_item.dart';
 
 part 'timeline_state.freezed.dart';
 
@@ -15,6 +16,7 @@ class TimelineState with _$TimelineState {
     required List<Project> availableProjects,
     @Default({}) Set<String> pendingOperations,
     @Default({}) Map<String, Day> optimisticDays,
+    @Default({}) Map<String, TimelineItem> cachedItems,
   }) = TimelineLoaded;
   const factory TimelineState.error({
     required Failure failure,
@@ -28,7 +30,7 @@ extension TimelineStateExtensions on TimelineState {
       initial: () => [],
       loading: () => [],
       error: (_) => [],
-      loaded: (days, _, __, ___, optimisticDays) {
+      loaded: (days, _, __, ___, optimisticDays, ____) {
         if (optimisticDays.isEmpty) return days;
         
         // Apply optimistic updates to the days
