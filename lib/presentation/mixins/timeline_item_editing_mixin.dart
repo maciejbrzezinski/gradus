@@ -4,11 +4,11 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import '../../../core/services/editing/timeline_item_editing_controller.dart';
-import '../../../core/utils/text_commands.dart';
-import '../../cubits/focus/focus_cubit.dart';
-import '../../cubits/timeline/timeline_cubit.dart';
-import '../../cubits/timeline/timeline_state.dart';
+import 'package:gradus/presentation/cubits/timeline/timeline_state.dart';
+import '../../core/services/editing/timeline_item_editing_controller.dart';
+import '../../core/utils/text_commands.dart';
+import '../cubits/focus/focus_cubit.dart';
+import '../cubits/timeline/timeline_cubit.dart';
 
 /// Simplified mixin that coordinates all editing functionality through services
 mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
@@ -336,11 +336,6 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
   /// Update text silently without triggering command detection
   void updateTextSilently(String text) {
     _controller.updateTextSilently(text);
-  }
-
-  /// Get current text from the controller
-  String getCurrentText() {
-    return _controller.textInputService.text;
   }
 
   @override

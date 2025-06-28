@@ -71,7 +71,7 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
   void onEnterPressed({required bool isShiftPressed}) {
     if (!isShiftPressed) {
       // Regular Enter - create new note of same type
-      final currentContent = textController.text.trim();
+      final currentContent = getCurrentText().trim();
       if (currentContent.isNotEmpty) {
 
         // Save current changes first and update the original content
@@ -140,8 +140,7 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
 
   void _startEditing() {
     onFocusGained(widget.note.id);
-    startEditing(initialText: widget.note.content);
-    focusNode.requestFocus();
+    startEditingMode(initialText: widget.note.content);
   }
 
   @override

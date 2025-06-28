@@ -64,7 +64,7 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
   void onEnterPressed({required bool isShiftPressed}) {
     if (!isShiftPressed) {
       // Regular Enter - create new task of same type
-      final currentContent = textController.text.trim();
+      final currentContent = getCurrentText().trim();
       if (currentContent.isNotEmpty) {
 
         // Save current changes first
@@ -117,8 +117,7 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
 
   void _startEditing() {
     onFocusGained(widget.task.id);
-    startEditing(initialText: widget.task.title);
-    focusNode.requestFocus();
+    startEditingMode(initialText: widget.task.title);
   }
 
   @override

@@ -15,6 +15,12 @@ import 'package:get_it/get_it.dart' as _i174;
 import 'package:google_sign_in/google_sign_in.dart' as _i116;
 import 'package:gradus/core/di/firebase_module.dart' as _i145;
 import 'package:gradus/core/services/auth_service.dart' as _i91;
+import 'package:gradus/core/services/editing/navigation_service.dart' as _i431;
+import 'package:gradus/core/services/editing/text_input_service.dart' as _i583;
+import 'package:gradus/core/services/editing/timeline_item_editing_controller.dart'
+    as _i54;
+import 'package:gradus/core/services/editing/type_selector_service.dart'
+    as _i87;
 import 'package:gradus/core/services/logger_service.dart' as _i327;
 import 'package:gradus/core/services/optimistic_sync_service.dart' as _i136;
 import 'package:gradus/data/datasources/days_datasource.dart' as _i861;
@@ -69,6 +75,9 @@ extension GetItInjectableX on _i174.GetIt {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final firebaseModule = _$FirebaseModule();
     gh.factory<_i837.FocusCubit>(() => _i837.FocusCubit());
+    gh.factory<_i431.NavigationService>(() => _i431.NavigationService());
+    gh.factory<_i583.TextInputService>(() => _i583.TextInputService());
+    gh.factory<_i87.TypeSelectorService>(() => _i87.TypeSelectorService());
     gh.lazySingleton<_i59.FirebaseAuth>(() => firebaseModule.firebaseAuth);
     gh.lazySingleton<_i974.FirebaseFirestore>(
       () => firebaseModule.firebaseFirestore,
@@ -77,6 +86,13 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i327.LoggerService>(() => _i327.LoggerService());
     gh.factory<_i91.AuthService>(
       () => _i91.AuthService(gh<_i59.FirebaseAuth>(), gh<_i116.GoogleSignIn>()),
+    );
+    gh.factory<_i54.TimelineItemEditingController>(
+      () => _i54.TimelineItemEditingController(
+        gh<_i583.TextInputService>(),
+        gh<_i87.TypeSelectorService>(),
+        gh<_i431.NavigationService>(),
+      ),
     );
     gh.factory<_i506.TimelineItemsDataSource>(
       () => _i506.TimelineItemsDataSource(
