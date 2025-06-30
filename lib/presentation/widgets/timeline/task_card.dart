@@ -25,13 +25,14 @@ class TaskCard extends StatefulWidget {
 class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
   String _originalTitle = '';
   final GlobalKey calendarIconKey = GlobalKey();
+  bool _isHovered = false;
 
   @override
   void initState() {
     super.initState();
     _originalTitle = widget.task.title;
     setupSmartTextController(initialText: _originalTitle);
-    
+
     // Auto-enter edit mode if title is empty (newly created item)
     if (widget.task.title.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -41,25 +42,18 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
   }
 
   @override
-  Future<void> transformCurrentItem({
-    required ItemType newType,
-    required String newContent,
-  }) async {
+  Future<void> transformCurrentItem({required ItemType newType, required String newContent}) async {
     final timelineCubit = context.read<TimelineCubit>();
-    
+
     if (newType == ItemType.task) {
       // Update task title (no transformation needed)
       saveChanges(newContent);
     } else if (newType.isHeadline || newType == ItemType.textNote) {
       // Transform task to note
       final noteType = newType.toNoteType();
-      await timelineCubit.transformTaskToNote(
-        taskId: widget.task.id,
-        noteContent: newContent,
-        noteType: noteType,
-      );
+      await timelineCubit.transformTaskToNote(taskId: widget.task.id, noteContent: newContent, noteType: noteType);
     }
-    
+
     // Don't exit edit mode - let the mixin handle focus management
   }
 
@@ -69,29 +63,31 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
       // Regular Enter - create new task of same type
       final currentContent = getCurrentText().trim();
       if (currentContent.isNotEmpty) {
-
         // Save current changes first
         saveChanges(currentContent);
         _originalTitle = currentContent;
-        
+
         // Create new task after current one and set focus to it
-        context.read<TimelineCubit>().createItemAfterCurrent(
-          currentItemId: widget.task.id,
-          day: widget.day,
-          itemType: ItemType.task,
-          content: '',
-        ).then((newItemId) {
-          if (newItemId != null && mounted) {
-            // Set focus to the newly created item
-            context.read<FocusCubit>().setFocus(newItemId);
-          }
-          
-          // Reset the flag and exit edit mode
-          if (mounted) {
-            setEditingState(false);
-          }
-        }).catchError((error) {
-        });
+        context
+            .read<TimelineCubit>()
+            .createItemAfterCurrent(
+              currentItemId: widget.task.id,
+              day: widget.day,
+              itemType: ItemType.task,
+              content: '',
+            )
+            .then((newItemId) {
+              if (newItemId != null && mounted) {
+                // Set focus to the newly created item
+                context.read<FocusCubit>().setFocus(newItemId);
+              }
+
+              // Reset the flag and exit edit mode
+              if (mounted) {
+                setEditingState(false);
+              }
+            })
+            .catchError((error) {});
       }
     }
     // Shift+Enter is handled by the TextFormField naturally (new line)
@@ -104,9 +100,7 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
       final previousItemId = widget.day.itemIds[index - 1];
       context.read<FocusCubit>().setFocus(previousItemId);
     }
-    context
-        .read<TimelineCubit>()
-        .deleteItemFromDay(itemId: widget.task.id, day: widget.day);
+    context.read<TimelineCubit>().deleteItemFromDay(itemId: widget.task.id, day: widget.day);
   }
 
   @override
@@ -129,12 +123,11 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
   @override
   TextStyle getCurrentTextStyle() {
     return Theme.of(context).textTheme.bodyMedium?.copyWith(
-      decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
-      color: widget.task.isCompleted 
-        ? AppTheme.textSecondary 
-        : AppTheme.textPrimary,
-      fontWeight: FontWeight.w500,
-    ) ?? const TextStyle(fontSize: 14);
+          decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
+          color: widget.task.isCompleted ? AppTheme.textSecondary : AppTheme.textPrimary,
+          fontWeight: FontWeight.w500,
+        ) ??
+        const TextStyle(fontSize: 14);
   }
 
   @override
@@ -142,7 +135,7 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
     return BlocBuilder<FocusCubit, String?>(
       builder: (context, focusedItemId) {
         final shouldFocus = focusedItemId == widget.task.id;
-        
+
         // Auto-focus if this item should have focus but isn't editing yet
         if (shouldFocus && !isEditing) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -151,7 +144,7 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
             }
           });
         }
-        
+
         return Draggable<Map<String, dynamic>>(
           data: {'itemId': widget.task.id, 'fromDay': widget.day, 'type': 'task'},
           feedback: Material(
@@ -159,10 +152,7 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
             borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
             child: Container(
               width: 280,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppTheme.spacing16,
-                vertical: AppTheme.spacing12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing16, vertical: AppTheme.spacing12),
               decoration: BoxDecoration(
                 color: AppTheme.cardBackground,
                 borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
@@ -181,14 +171,15 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
   Widget _buildTaskCard(BuildContext context) {
     return Material(
       color: Colors.transparent,
-      child: InkWell(
-        onTap: _startEditing,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacing24,
-            vertical: AppTheme.spacing4,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: InkWell(
+          onTap: _startEditing,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing24, vertical: AppTheme.spacing4),
+            child: _buildTaskContent(context),
           ),
-          child: _buildTaskContent(context),
         ),
       ),
     );
@@ -218,56 +209,51 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
             margin: const EdgeInsets.only(top: 2),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: widget.task.isCompleted ? AppTheme.success : AppTheme.textSecondary,
-                width: 2,
-              ),
+              border: Border.all(color: widget.task.isCompleted ? AppTheme.success : AppTheme.textSecondary, width: 2),
               color: widget.task.isCompleted ? AppTheme.success : Colors.transparent,
             ),
-            child: widget.task.isCompleted 
-              ? const Icon(Icons.check, size: 12, color: Colors.white)
-              : null,
+            child: widget.task.isCompleted ? const Icon(Icons.check, size: 12, color: Colors.white) : null,
           ),
         ),
         const SizedBox(width: AppTheme.spacing12),
-        Expanded(
+        Flexible(
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Flexible(
-                child: isEditing
-                  ? buildEditingInput(
-                      context: context,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
-                        color: widget.task.isCompleted 
-                          ? AppTheme.textSecondary 
-                          : AppTheme.textPrimary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    )
-                  : Text(
-                      widget.task.title,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
-                        color: widget.task.isCompleted 
-                          ? AppTheme.textSecondary 
-                          : AppTheme.textPrimary,
-                        fontWeight: FontWeight.w500,
-                        height: 1.4,
-                      ),
-                    ),
+                child: IntrinsicWidth(
+                  child: isEditing
+                      ? buildEditingInput(
+                          context: context,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
+                            color: widget.task.isCompleted ? AppTheme.textSecondary : AppTheme.textPrimary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        )
+                      : Text(
+                          widget.task.title,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
+                            color: widget.task.isCompleted ? AppTheme.textSecondary : AppTheme.textPrimary,
+                            fontWeight: FontWeight.w500,
+                            height: 1.4,
+                          ),
+                        ),
+                ),
               ),
               const SizedBox(width: AppTheme.spacing8),
-              GestureDetector(
-                onTap: _showRecurrenceModal,
-                child: Icon(
-                  key: calendarIconKey,
-                  Icons.calendar_today,
-                  size: 16,
-                  color: widget.task.recurrence != null 
-                    ? AppTheme.primaryColor 
-                    : AppTheme.textSecondary,
+              AnimatedOpacity(
+                opacity: (widget.task.recurrence != null || _isHovered) ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 100),
+                child: GestureDetector(
+                  onTap: _showRecurrenceModal,
+                  child: Icon(
+                    key: calendarIconKey,
+                    Icons.event_repeat,
+                    size: 16,
+                    color: widget.task.recurrence != null ? AppTheme.primaryColor : AppTheme.textSecondary,
+                  ),
                 ),
               ),
             ],
@@ -281,7 +267,7 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
     final RenderBox renderBox = calendarIconKey.currentContext!.findRenderObject() as RenderBox;
     final Offset offset = renderBox.localToGlobal(Offset.zero);
     final Size size = renderBox.size;
-    
+
     showMenu<RecurrenceRule?>(
       context: context,
       position: RelativeRect.fromLTRB(
