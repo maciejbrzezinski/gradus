@@ -5,10 +5,12 @@ import 'package:gradus/domain/entities/timeline_item.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/day.dart';
 import '../../../domain/entities/task.dart';
+import '../../../domain/entities/recurrence_rule.dart';
 import '../../../core/utils/text_commands.dart';
 import '../../cubits/timeline/timeline_cubit.dart';
 import '../../cubits/focus/focus_cubit.dart';
 import '../shared/timeline_item_editing_mixin.dart';
+import 'recurrence_settings_modal.dart';
 
 class TaskCard extends StatefulWidget {
   final Task task;
@@ -22,6 +24,7 @@ class TaskCard extends StatefulWidget {
 
 class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
   String _originalTitle = '';
+  final GlobalKey calendarIconKey = GlobalKey();
 
   @override
   void initState() {
@@ -198,7 +201,16 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
         GestureDetector(
           onTap: () {
             final updatedTask = widget.task.copyWith(isCompleted: !widget.task.isCompleted);
-            context.read<TimelineCubit>().updateTimelineItem(TimelineItem.task(updatedTask));
+            // Use the new completeRecurringTask method for tasks with recurrence
+            if (widget.task.recurrence != null) {
+              context.read<TimelineCubit>().completeRecurringTask(
+                task: widget.task,
+                day: widget.day,
+                isCompleted: !widget.task.isCompleted,
+              );
+            } else {
+              context.read<TimelineCubit>().updateTimelineItem(TimelineItem.task(updatedTask));
+            }
           },
           child: Container(
             width: 20,
@@ -219,52 +231,45 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
         ),
         const SizedBox(width: AppTheme.spacing12),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              isEditing
-                ? buildEditingInput(
-                    context: context,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
-                      color: widget.task.isCompleted 
-                        ? AppTheme.textSecondary 
-                        : AppTheme.textPrimary,
-                      fontWeight: FontWeight.w500,
+              Flexible(
+                child: isEditing
+                  ? buildEditingInput(
+                      context: context,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
+                        color: widget.task.isCompleted 
+                          ? AppTheme.textSecondary 
+                          : AppTheme.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    )
+                  : Text(
+                      widget.task.title,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
+                        color: widget.task.isCompleted 
+                          ? AppTheme.textSecondary 
+                          : AppTheme.textPrimary,
+                        fontWeight: FontWeight.w500,
+                        height: 1.4,
+                      ),
                     ),
-                  )
-                : Text(
-                    widget.task.title,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      decoration: widget.task.isCompleted ? TextDecoration.lineThrough : null,
-                      color: widget.task.isCompleted 
-                        ? AppTheme.textSecondary 
-                        : AppTheme.textPrimary,
-                      fontWeight: FontWeight.w500,
-                      height: 1.4,
-                    ),
-                  ),
-              if (_shouldShowDaily()) ...[
-                const SizedBox(height: AppTheme.spacing8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppTheme.spacing8,
-                    vertical: AppTheme.spacing4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
-                  ),
-                  child: Text(
-                    'Daily',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
-                    ),
-                  ),
+              ),
+              const SizedBox(width: AppTheme.spacing8),
+              GestureDetector(
+                onTap: _showRecurrenceModal,
+                child: Icon(
+                  key: calendarIconKey,
+                  Icons.calendar_today,
+                  size: 16,
+                  color: widget.task.recurrence != null 
+                    ? AppTheme.primaryColor 
+                    : AppTheme.textSecondary,
                 ),
-              ],
+              ),
             ],
           ),
         ),
@@ -272,8 +277,39 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
     );
   }
 
-  bool _shouldShowDaily() {
-    // Pokaż "daily" jeśli zadanie ma recurrence
-    return widget.task.recurrence != null;
+  void _showRecurrenceModal() {
+    final RenderBox renderBox = calendarIconKey.currentContext!.findRenderObject() as RenderBox;
+    final Offset offset = renderBox.localToGlobal(Offset.zero);
+    final Size size = renderBox.size;
+    
+    showMenu<RecurrenceRule?>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        offset.dx + size.width, // Position near the calendar icon
+        offset.dy + size.height,
+        offset.dx + size.width, // Width of the menu
+        offset.dy,
+      ),
+      items: [
+        PopupMenuItem<RecurrenceRule?>(
+          enabled: false, // Disable default tap behavior
+          child: RecurrenceSettingsModal(
+            initialRecurrence: widget.task.recurrence,
+            onRecurrenceChanged: (newRecurrence) {
+              Navigator.of(context).pop();
+              _updateTaskRecurrence(newRecurrence);
+            },
+            onDismiss: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _updateTaskRecurrence(RecurrenceRule? newRecurrence) {
+    final updatedTask = widget.task.copyWith(recurrence: newRecurrence);
+    context.read<TimelineCubit>().updateTimelineItem(TimelineItem.task(updatedTask));
   }
 }

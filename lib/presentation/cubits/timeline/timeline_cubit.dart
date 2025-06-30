@@ -23,6 +23,7 @@ import '../../../domain/entities/note_type.dart';
 import '../../../domain/entities/timeline_item.dart';
 import '../../../domain/usecases/timeline_items/update_timeline_item_usecase.dart';
 import '../../../domain/usecases/timeline_items/delete_timeline_item_usecase.dart';
+import '../../../domain/usecases/timeline_items/complete_recurring_task_usecase.dart';
 import '../../../core/utils/text_commands.dart';
 import '../../../core/services/optimistic_sync_service.dart';
 import 'timeline_state.dart';
@@ -42,6 +43,7 @@ class TimelineCubit extends Cubit<TimelineState> {
   final WatchTimelineItemUseCase _watchTimelineItemUseCase;
   final UpdateTimelineItemUseCase _updateTimelineItemUseCase;
   final DeleteTimelineItemUseCase _deleteTimelineItemUseCase;
+  final CompleteRecurringTaskUseCase _completeRecurringTaskUseCase;
   final AuthService _authService;
   final OptimisticSyncService _optimisticSyncService;
 
@@ -67,6 +69,7 @@ class TimelineCubit extends Cubit<TimelineState> {
     this._watchTimelineItemUseCase,
     this._updateTimelineItemUseCase,
     this._deleteTimelineItemUseCase,
+    this._completeRecurringTaskUseCase,
     this._authService,
     this._optimisticSyncService,
   ) : super(const TimelineState.initial()) {
@@ -887,6 +890,51 @@ class TimelineCubit extends Cubit<TimelineState> {
       print('❌ [TimelineCubit] Item update sync failed: $error');
       _removeOptimisticOperation(operationId);
     });
+  }
+
+  Future<void> completeRecurringTask({
+    required Task task,
+    required Day day,
+    required bool isCompleted,
+  }) async {
+    print('🚀 [TimelineCubit] completeRecurringTask - task: ${task.title}, isCompleted: $isCompleted');
+
+    final currentState = state;
+    if (currentState is! TimelineLoaded) return;
+
+    final operationId = 'complete_recurring_task_${task.id}_${DateTime.now().millisecondsSinceEpoch}';
+    
+    // Apply optimistic update to cached items first
+    final updatedTask = task.copyWith(isCompleted: isCompleted);
+    final updatedCachedItems = Map<String, TimelineItem>.from(currentState.cachedItems);
+    updatedCachedItems[task.id] = TimelineItem.task(updatedTask);
+    
+    emit(currentState.copyWith(
+      cachedItems: updatedCachedItems,
+      pendingOperations: {...currentState.pendingOperations, operationId},
+    ));
+
+    // Use the CompleteRecurringTaskUseCase for the actual logic
+    final result = await _completeRecurringTaskUseCase(
+      task: task,
+      currentDay: day,
+      isCompleted: isCompleted,
+    );
+
+    result.fold(
+      (failure) {
+        print('❌ [TimelineCubit] Failed to complete recurring task: ${failure.toString()}');
+        _removeOptimisticOperation(operationId);
+        // Revert optimistic update on failure
+        final revertedCachedItems = Map<String, TimelineItem>.from(currentState.cachedItems);
+        revertedCachedItems[task.id] = TimelineItem.task(task);
+        emit(currentState.copyWith(cachedItems: revertedCachedItems));
+      },
+      (_) {
+        print('✅ [TimelineCubit] Recurring task completion completed successfully');
+        _removeOptimisticOperation(operationId);
+      },
+    );
   }
 
   // Getters for easy access

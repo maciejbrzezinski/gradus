@@ -50,6 +50,8 @@ import 'package:gradus/domain/usecases/projects/get_projects_usecase.dart'
     as _i903;
 import 'package:gradus/domain/usecases/projects/watch_projects_usecase.dart'
     as _i68;
+import 'package:gradus/domain/usecases/timeline_items/complete_recurring_task_usecase.dart'
+    as _i408;
 import 'package:gradus/domain/usecases/timeline_items/create_timeline_item_usecase.dart'
     as _i939;
 import 'package:gradus/domain/usecases/timeline_items/delete_timeline_item_usecase.dart'
@@ -151,6 +153,12 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i214.GetDaysUseCase(gh<_i755.DaysRepository>()),
     );
     gh.factory<_i858.AuthCubit>(() => _i858.AuthCubit(gh<_i91.AuthService>()));
+    gh.factory<_i408.CompleteRecurringTaskUseCase>(
+      () => _i408.CompleteRecurringTaskUseCase(
+        gh<_i348.TimelineItemsRepository>(),
+        gh<_i755.DaysRepository>(),
+      ),
+    );
     gh.factory<_i431.DeleteTimelineItemUseCase>(
       () =>
           _i431.DeleteTimelineItemUseCase(gh<_i348.TimelineItemsRepository>()),
@@ -193,6 +201,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i484.WatchTimelineItemUseCase>(),
         gh<_i1003.UpdateTimelineItemUseCase>(),
         gh<_i431.DeleteTimelineItemUseCase>(),
+        gh<_i408.CompleteRecurringTaskUseCase>(),
         gh<_i91.AuthService>(),
         gh<_i136.OptimisticSyncService>(),
       ),

@@ -101,15 +101,13 @@ abstract class TimelineItem with _$TimelineItem {
 ### Task Entity
 ```dart
 @freezed
-class Task extends TimelineItem with _$Task {
+class Task with _$Task {
   const factory Task({
     required String id,
-    required String projectId,
     required DateTime createdAt,
     required DateTime updatedAt,
     required String title,
     @Default(false) bool isCompleted,
-    required DateTime date,
     String? description,
     RecurrenceRule? recurrence,
   }) = _Task;
@@ -121,10 +119,9 @@ class Task extends TimelineItem with _$Task {
 ### Note Entity
 ```dart
 @freezed
-class Note extends TimelineItem with _$Note {
+class Note with _$Note {
   const factory Note({
     required String id,
-    required String projectId,
     required DateTime createdAt,
     required DateTime updatedAt,
     required String content,
