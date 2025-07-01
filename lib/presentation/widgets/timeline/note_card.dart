@@ -5,6 +5,7 @@ import 'package:gradus/domain/entities/timeline_item.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/note.dart';
+import '../../../domain/entities/task.dart';
 import '../../../domain/entities/note_type.dart';
 import '../../../core/utils/text_commands.dart';
 import '../../cubits/timeline/timeline_cubit.dart';
@@ -55,14 +56,28 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
     final timelineCubit = context.read<TimelineCubit>();
 
     if (newType == ItemType.task) {
-      // Transform note to task
-      await timelineCubit.transformNoteToTask(noteId: widget.note.id, taskTitle: newContent);
+      // Transform note to task - create task with same ID
+      final task = Task(
+        id: widget.note.id,
+        createdAt: widget.note.createdAt, // Keep original timestamps
+        updatedAt: DateTime.now(),
+        title: newContent,
+        isCompleted: false,
+      );
+      await timelineCubit.updateTimelineItem(TimelineItem.task(task));
     } else if (newType.isHeadline || newType == ItemType.textNote) {
-      // Transform note type
-      final noteType = newType.toNoteType();
-      await timelineCubit.transformNoteType(noteId: widget.note.id, content: newContent, newType: noteType);
+      // Transform note type - create note with new type
+      final note = widget.note.copyWith(
+        content: newContent,
+        type: newType.toNoteType(),
+        updatedAt: DateTime.now(),
+      );
+      await timelineCubit.updateTimelineItem(TimelineItem.note(note));
     }
-    context.read<FocusCubit>().setFocus(widget.note.id);
+    
+    if (mounted) {
+      context.read<FocusCubit>().setFocus(widget.note.id);
+    }
 
     // Don't exit edit mode - let the mixin handle focus management
   }
