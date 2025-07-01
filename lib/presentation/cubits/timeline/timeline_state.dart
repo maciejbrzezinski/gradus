@@ -11,12 +11,12 @@ class TimelineState with _$TimelineState {
   const factory TimelineState.initial() = TimelineInitial;
   const factory TimelineState.loading() = TimelineLoading;
   const factory TimelineState.loaded({
-    required List<Day> days,
     required Project? selectedProject,
     required List<Project> availableProjects,
-    @Default({}) Set<String> pendingOperations,
-    @Default({}) Map<String, Day> optimisticDays,
-    @Default({}) Map<String, TimelineItem> cachedItems,
+    required List<Day> days,
+    required List<TimelineItem> items,
+    required DateTime startDate,
+    required DateTime endDate,
   }) = TimelineLoaded;
   const factory TimelineState.error({
     required Failure failure,
@@ -24,28 +24,43 @@ class TimelineState with _$TimelineState {
 }
 
 extension TimelineStateExtensions on TimelineState {
-  /// Get the effective days list with optimistic updates applied
-  List<Day> get effectiveDays {
-    return when(
-      initial: () => [],
-      loading: () => [],
-      error: (_) => [],
-      loaded: (days, _, __, ___, optimisticDays, ____) {
-        if (optimisticDays.isEmpty) return days;
-        
-        // Apply optimistic updates to the days
-        final Map<String, Day> dayMap = {
-          for (final day in days) _getDayKey(day): day
-        };
-        
-        // Override with optimistic updates
-        dayMap.addAll(optimisticDays);
-        
-        return dayMap.values.toList()
+  List<Day> getDaysForProject(String projectId) {
+    return maybeWhen(
+      loaded: (_, __, days, ___, ____, _____) {
+        return days
+          .where((day) => day.projectId == projectId)
+          .toList()
           ..sort((a, b) => a.date.compareTo(b.date));
       },
+      orElse: () => [],
     );
   }
   
-  String _getDayKey(Day day) => '${day.projectId}_${day.date.toIso8601String().split('T')[0]}';
+  List<TimelineItem> getItemsForDay(Day day) {
+    return maybeWhen(
+      loaded: (_, __, ___, items, ____, _____) {
+        return day.itemIds
+          .map((id) => items.cast<TimelineItem?>().firstWhere(
+            (item) => item?.id == id,
+            orElse: () => null,
+          ))
+          .where((item) => item != null)
+          .cast<TimelineItem>()
+          .toList();
+      },
+      orElse: () => [],
+    );
+  }
+  
+  TimelineItem? getItemById(String itemId) {
+    return maybeWhen(
+      loaded: (_, __, ___, items, ____, _____) {
+        return items.cast<TimelineItem?>().firstWhere(
+          (item) => item?.id == itemId,
+          orElse: () => null,
+        );
+      },
+      orElse: () => null,
+    );
+  }
 }

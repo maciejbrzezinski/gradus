@@ -179,6 +179,76 @@ class TimelineItemsDataSource {
     }
   }
 
+  Future<List<TimelineItem>> getTimelineItems(List<String> itemIds) async {
+    _logger.i('📋 [TimelineItemsDataSource] getTimelineItems - itemIds: ${itemIds.length} items');
+
+    if (itemIds.isEmpty) return [];
+
+    try {
+      final items = <TimelineItem>[];
+      
+      // Firestore has a limit of 10 items per 'in' query, so we batch them
+      const batchSize = 10;
+      for (int i = 0; i < itemIds.length; i += batchSize) {
+        final batch = itemIds.skip(i).take(batchSize).toList();
+        
+        final querySnapshot = await _timelineItemsCollection
+            .where(FieldPath.documentId, whereIn: batch)
+            .get();
+        
+        for (final doc in querySnapshot.docs) {
+          if (doc.exists) {
+            try {
+              final item = _mapDocToTimelineItem(doc);
+              items.add(item);
+            } catch (e) {
+              _logger.e('❌ [TimelineItemsDataSource] Error mapping doc: ${doc.id}', error: e);
+            }
+          }
+        }
+      }
+
+      _logger.i('✅ [TimelineItemsDataSource] getTimelineItems - found ${items.length} items');
+      return items;
+    } catch (e) {
+      _logger.e('❌ [TimelineItemsDataSource] getTimelineItems - error', error: e);
+      rethrow;
+    }
+  }
+
+  Stream<List<TimelineItem>> watchTimelineItems(List<String> itemIds) {
+    _logger.i('🔍 [TimelineItemsDataSource] watchTimelineItems - itemIds: ${itemIds.length} items');
+
+    if (itemIds.isEmpty) return Stream.value([]);
+
+    // Initialize Firestore stream if not already done
+    _initializeFirestoreStream();
+
+    // Create a stream controller for the combined items
+    final controller = StreamController<List<TimelineItem>>.broadcast();
+    final Map<String, TimelineItem> itemsMap = {};
+
+    // Listen to individual item updates and build the list
+    final subscription = _itemsController.stream
+        .where((item) => itemIds.contains(item.id))
+        .listen((item) {
+          itemsMap[item.id] = item;
+          // Emit the current list of items in the order of itemIds
+          final orderedItems = itemIds
+              .where((id) => itemsMap.containsKey(id))
+              .map((id) => itemsMap[id]!)
+              .toList();
+          controller.add(orderedItems);
+        });
+
+    // Clean up when stream is cancelled
+    controller.onCancel = () {
+      subscription.cancel();
+    };
+
+    return controller.stream.distinct();
+  }
+
   TimelineItem _mapDataToTimelineItem(Map<String, dynamic> data) {
     final type = data['type'] as String;
 

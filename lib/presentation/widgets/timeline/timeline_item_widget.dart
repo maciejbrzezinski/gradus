@@ -30,9 +30,9 @@ class _TimelineItemWidgetState extends State<TimelineItemWidget> {
           return _buildLoadingWidget();
         }
 
-        final item = state.cachedItems[widget.itemId];
+        final item = state.getItemById(widget.itemId);
         if (item == null) {
-          // Item not yet cached, show minimal loading
+          // Item not yet loaded, show minimal loading
           return _buildLoadingWidget();
         }
 

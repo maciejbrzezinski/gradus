@@ -63,4 +63,25 @@ class TimelineItemsRepositoryImpl implements TimelineItemsRepository {
       return Left(Failure.unknownFailure(message: e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, List<TimelineItem>>> getTimelineItems(List<String> itemIds) async {
+    try {
+      final items = await _dataSource.getTimelineItems(itemIds);
+      return Right(items);
+    } catch (e) {
+      return Left(Failure.unknownFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Stream<List<TimelineItem>> watchTimelineItems(List<String> itemIds) {
+    try {
+      return _dataSource.watchTimelineItems(itemIds).handleError((error) {
+        return Left(Failure.unknownFailure(message: error.toString()));
+      });
+    } catch (e) {
+      return Stream.empty();
+    }
+  }
 }

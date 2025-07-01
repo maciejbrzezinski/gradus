@@ -125,6 +125,7 @@ class CompleteRecurringTaskUseCase {
       await daysResult.fold(
         (failure) async {
           // If getting days failed, we can't proceed
+
           print('Failed to get days for next occurrence: $failure');
         },
         (days) async {

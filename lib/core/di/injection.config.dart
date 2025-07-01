@@ -58,10 +58,14 @@ import 'package:gradus/domain/usecases/timeline_items/delete_timeline_item_useca
     as _i431;
 import 'package:gradus/domain/usecases/timeline_items/get_timeline_item_usecase.dart'
     as _i172;
+import 'package:gradus/domain/usecases/timeline_items/get_timeline_items_usecase.dart'
+    as _i407;
 import 'package:gradus/domain/usecases/timeline_items/update_timeline_item_usecase.dart'
     as _i1003;
 import 'package:gradus/domain/usecases/timeline_items/watch_timeline_item_usecase.dart'
     as _i484;
+import 'package:gradus/domain/usecases/timeline_items/watch_timeline_items_usecase.dart'
+    as _i239;
 import 'package:gradus/presentation/cubits/auth/auth_cubit.dart' as _i858;
 import 'package:gradus/presentation/cubits/focus/focus_cubit.dart' as _i837;
 import 'package:gradus/presentation/cubits/timeline/timeline_cubit.dart'
@@ -177,6 +181,13 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i484.WatchTimelineItemUseCase>(
       () => _i484.WatchTimelineItemUseCase(gh<_i348.TimelineItemsRepository>()),
     );
+    gh.factory<_i239.WatchTimelineItemsUseCase>(
+      () =>
+          _i239.WatchTimelineItemsUseCase(gh<_i348.TimelineItemsRepository>()),
+    );
+    gh.factory<_i407.GetTimelineItemsUseCase>(
+      () => _i407.GetTimelineItemsUseCase(gh<_i348.TimelineItemsRepository>()),
+    );
     gh.factory<_i136.OptimisticSyncService>(
       () => _i136.OptimisticSyncService(
         gh<_i755.DaysRepository>(),
@@ -190,20 +201,18 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i293.TimelineCubit(
         gh<_i214.GetDaysUseCase>(),
         gh<_i956.WatchDaysUseCase>(),
-        gh<_i913.MoveItemBetweenDaysUseCase>(),
         gh<_i468.AddItemToDayUseCase>(),
         gh<_i811.RemoveItemFromDayUseCase>(),
+        gh<_i913.MoveItemBetweenDaysUseCase>(),
         gh<_i903.GetProjectsUseCase>(),
         gh<_i68.WatchProjectsUseCase>(),
         gh<_i654.GetProjectByIdUseCase>(),
+        gh<_i407.GetTimelineItemsUseCase>(),
+        gh<_i239.WatchTimelineItemsUseCase>(),
         gh<_i939.CreateTimelineItemUseCase>(),
-        gh<_i172.GetTimelineItemUseCase>(),
-        gh<_i484.WatchTimelineItemUseCase>(),
         gh<_i1003.UpdateTimelineItemUseCase>(),
         gh<_i431.DeleteTimelineItemUseCase>(),
         gh<_i408.CompleteRecurringTaskUseCase>(),
-        gh<_i91.AuthService>(),
-        gh<_i136.OptimisticSyncService>(),
       ),
     );
     return this;

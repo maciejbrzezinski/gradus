@@ -123,9 +123,12 @@ mixin ArrowNavigationMixin<T extends StatefulWidget> on State<T> {
     final currentState = context.read<TimelineCubit>().state;
     if (currentState is TimelineLoaded) {
       final focusCubit = context.read<FocusCubit>();
+      final days = currentState.selectedProject != null 
+          ? currentState.getDaysForProject(currentState.selectedProject!.id)
+          : currentState.days;
       final previousItemId = _navigationService.findPreviousItemId(
         getCurrentItemId(), 
-        currentState.effectiveDays,
+        days,
       );
 
       if (previousItemId != null) {
@@ -143,9 +146,12 @@ mixin ArrowNavigationMixin<T extends StatefulWidget> on State<T> {
     final currentState = context.read<TimelineCubit>().state;
     if (currentState is TimelineLoaded) {
       final focusCubit = context.read<FocusCubit>();
+      final days = currentState.selectedProject != null 
+          ? currentState.getDaysForProject(currentState.selectedProject!.id)
+          : currentState.days;
       final nextItemId = _navigationService.findNextItemId(
         getCurrentItemId(), 
-        currentState.effectiveDays,
+        days,
       );
 
       if (nextItemId != null) {

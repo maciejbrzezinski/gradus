@@ -13,4 +13,9 @@ abstract class TimelineItemsRepository {
   Future<Either<Failure, Unit>> updateTimelineItem(TimelineItem item);
 
   Future<Either<Failure, Unit>> deleteTimelineItem(String itemId);
+
+  // New methods for batch operations
+  Future<Either<Failure, List<TimelineItem>>> getTimelineItems(List<String> itemIds);
+  
+  Stream<List<TimelineItem>> watchTimelineItems(List<String> itemIds);
 }

@@ -22,12 +22,12 @@ mixin _$TimelineState {
     required TResult Function() initial,
     required TResult Function() loading,
     required TResult Function(
-      List<Day> days,
       Project? selectedProject,
       List<Project> availableProjects,
-      Set<String> pendingOperations,
-      Map<String, Day> optimisticDays,
-      Map<String, TimelineItem> cachedItems,
+      List<Day> days,
+      List<TimelineItem> items,
+      DateTime startDate,
+      DateTime endDate,
     )
     loaded,
     required TResult Function(Failure failure) error,
@@ -37,12 +37,12 @@ mixin _$TimelineState {
     TResult? Function()? initial,
     TResult? Function()? loading,
     TResult? Function(
-      List<Day> days,
       Project? selectedProject,
       List<Project> availableProjects,
-      Set<String> pendingOperations,
-      Map<String, Day> optimisticDays,
-      Map<String, TimelineItem> cachedItems,
+      List<Day> days,
+      List<TimelineItem> items,
+      DateTime startDate,
+      DateTime endDate,
     )?
     loaded,
     TResult? Function(Failure failure)? error,
@@ -52,12 +52,12 @@ mixin _$TimelineState {
     TResult Function()? initial,
     TResult Function()? loading,
     TResult Function(
-      List<Day> days,
       Project? selectedProject,
       List<Project> availableProjects,
-      Set<String> pendingOperations,
-      Map<String, Day> optimisticDays,
-      Map<String, TimelineItem> cachedItems,
+      List<Day> days,
+      List<TimelineItem> items,
+      DateTime startDate,
+      DateTime endDate,
     )?
     loaded,
     TResult Function(Failure failure)? error,
@@ -155,12 +155,12 @@ class _$TimelineInitialImpl implements TimelineInitial {
     required TResult Function() initial,
     required TResult Function() loading,
     required TResult Function(
-      List<Day> days,
       Project? selectedProject,
       List<Project> availableProjects,
-      Set<String> pendingOperations,
-      Map<String, Day> optimisticDays,
-      Map<String, TimelineItem> cachedItems,
+      List<Day> days,
+      List<TimelineItem> items,
+      DateTime startDate,
+      DateTime endDate,
     )
     loaded,
     required TResult Function(Failure failure) error,
@@ -174,12 +174,12 @@ class _$TimelineInitialImpl implements TimelineInitial {
     TResult? Function()? initial,
     TResult? Function()? loading,
     TResult? Function(
-      List<Day> days,
       Project? selectedProject,
       List<Project> availableProjects,
-      Set<String> pendingOperations,
-      Map<String, Day> optimisticDays,
-      Map<String, TimelineItem> cachedItems,
+      List<Day> days,
+      List<TimelineItem> items,
+      DateTime startDate,
+      DateTime endDate,
     )?
     loaded,
     TResult? Function(Failure failure)? error,
@@ -193,12 +193,12 @@ class _$TimelineInitialImpl implements TimelineInitial {
     TResult Function()? initial,
     TResult Function()? loading,
     TResult Function(
-      List<Day> days,
       Project? selectedProject,
       List<Project> availableProjects,
-      Set<String> pendingOperations,
-      Map<String, Day> optimisticDays,
-      Map<String, TimelineItem> cachedItems,
+      List<Day> days,
+      List<TimelineItem> items,
+      DateTime startDate,
+      DateTime endDate,
     )?
     loaded,
     TResult Function(Failure failure)? error,
@@ -298,12 +298,12 @@ class _$TimelineLoadingImpl implements TimelineLoading {
     required TResult Function() initial,
     required TResult Function() loading,
     required TResult Function(
-      List<Day> days,
       Project? selectedProject,
       List<Project> availableProjects,
-      Set<String> pendingOperations,
-      Map<String, Day> optimisticDays,
-      Map<String, TimelineItem> cachedItems,
+      List<Day> days,
+      List<TimelineItem> items,
+      DateTime startDate,
+      DateTime endDate,
     )
     loaded,
     required TResult Function(Failure failure) error,
@@ -317,12 +317,12 @@ class _$TimelineLoadingImpl implements TimelineLoading {
     TResult? Function()? initial,
     TResult? Function()? loading,
     TResult? Function(
-      List<Day> days,
       Project? selectedProject,
       List<Project> availableProjects,
-      Set<String> pendingOperations,
-      Map<String, Day> optimisticDays,
-      Map<String, TimelineItem> cachedItems,
+      List<Day> days,
+      List<TimelineItem> items,
+      DateTime startDate,
+      DateTime endDate,
     )?
     loaded,
     TResult? Function(Failure failure)? error,
@@ -336,12 +336,12 @@ class _$TimelineLoadingImpl implements TimelineLoading {
     TResult Function()? initial,
     TResult Function()? loading,
     TResult Function(
-      List<Day> days,
       Project? selectedProject,
       List<Project> availableProjects,
-      Set<String> pendingOperations,
-      Map<String, Day> optimisticDays,
-      Map<String, TimelineItem> cachedItems,
+      List<Day> days,
+      List<TimelineItem> items,
+      DateTime startDate,
+      DateTime endDate,
     )?
     loaded,
     TResult Function(Failure failure)? error,
@@ -403,12 +403,12 @@ abstract class _$$TimelineLoadedImplCopyWith<$Res> {
   ) = __$$TimelineLoadedImplCopyWithImpl<$Res>;
   @useResult
   $Res call({
-    List<Day> days,
     Project? selectedProject,
     List<Project> availableProjects,
-    Set<String> pendingOperations,
-    Map<String, Day> optimisticDays,
-    Map<String, TimelineItem> cachedItems,
+    List<Day> days,
+    List<TimelineItem> items,
+    DateTime startDate,
+    DateTime endDate,
   });
 
   $ProjectCopyWith<$Res>? get selectedProject;
@@ -428,19 +428,15 @@ class __$$TimelineLoadedImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? days = null,
     Object? selectedProject = freezed,
     Object? availableProjects = null,
-    Object? pendingOperations = null,
-    Object? optimisticDays = null,
-    Object? cachedItems = null,
+    Object? days = null,
+    Object? items = null,
+    Object? startDate = null,
+    Object? endDate = null,
   }) {
     return _then(
       _$TimelineLoadedImpl(
-        days: null == days
-            ? _value._days
-            : days // ignore: cast_nullable_to_non_nullable
-                  as List<Day>,
         selectedProject: freezed == selectedProject
             ? _value.selectedProject
             : selectedProject // ignore: cast_nullable_to_non_nullable
@@ -449,18 +445,22 @@ class __$$TimelineLoadedImplCopyWithImpl<$Res>
             ? _value._availableProjects
             : availableProjects // ignore: cast_nullable_to_non_nullable
                   as List<Project>,
-        pendingOperations: null == pendingOperations
-            ? _value._pendingOperations
-            : pendingOperations // ignore: cast_nullable_to_non_nullable
-                  as Set<String>,
-        optimisticDays: null == optimisticDays
-            ? _value._optimisticDays
-            : optimisticDays // ignore: cast_nullable_to_non_nullable
-                  as Map<String, Day>,
-        cachedItems: null == cachedItems
-            ? _value._cachedItems
-            : cachedItems // ignore: cast_nullable_to_non_nullable
-                  as Map<String, TimelineItem>,
+        days: null == days
+            ? _value._days
+            : days // ignore: cast_nullable_to_non_nullable
+                  as List<Day>,
+        items: null == items
+            ? _value._items
+            : items // ignore: cast_nullable_to_non_nullable
+                  as List<TimelineItem>,
+        startDate: null == startDate
+            ? _value.startDate
+            : startDate // ignore: cast_nullable_to_non_nullable
+                  as DateTime,
+        endDate: null == endDate
+            ? _value.endDate
+            : endDate // ignore: cast_nullable_to_non_nullable
+                  as DateTime,
       ),
     );
   }
@@ -484,25 +484,15 @@ class __$$TimelineLoadedImplCopyWithImpl<$Res>
 
 class _$TimelineLoadedImpl implements TimelineLoaded {
   const _$TimelineLoadedImpl({
-    required final List<Day> days,
     required this.selectedProject,
     required final List<Project> availableProjects,
-    final Set<String> pendingOperations = const {},
-    final Map<String, Day> optimisticDays = const {},
-    final Map<String, TimelineItem> cachedItems = const {},
-  }) : _days = days,
-       _availableProjects = availableProjects,
-       _pendingOperations = pendingOperations,
-       _optimisticDays = optimisticDays,
-       _cachedItems = cachedItems;
-
-  final List<Day> _days;
-  @override
-  List<Day> get days {
-    if (_days is EqualUnmodifiableListView) return _days;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_days);
-  }
+    required final List<Day> days,
+    required final List<TimelineItem> items,
+    required this.startDate,
+    required this.endDate,
+  }) : _availableProjects = availableProjects,
+       _days = days,
+       _items = items;
 
   @override
   final Project? selectedProject;
@@ -515,37 +505,30 @@ class _$TimelineLoadedImpl implements TimelineLoaded {
     return EqualUnmodifiableListView(_availableProjects);
   }
 
-  final Set<String> _pendingOperations;
+  final List<Day> _days;
   @override
-  @JsonKey()
-  Set<String> get pendingOperations {
-    if (_pendingOperations is EqualUnmodifiableSetView)
-      return _pendingOperations;
+  List<Day> get days {
+    if (_days is EqualUnmodifiableListView) return _days;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableSetView(_pendingOperations);
+    return EqualUnmodifiableListView(_days);
   }
 
-  final Map<String, Day> _optimisticDays;
+  final List<TimelineItem> _items;
   @override
-  @JsonKey()
-  Map<String, Day> get optimisticDays {
-    if (_optimisticDays is EqualUnmodifiableMapView) return _optimisticDays;
+  List<TimelineItem> get items {
+    if (_items is EqualUnmodifiableListView) return _items;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableMapView(_optimisticDays);
+    return EqualUnmodifiableListView(_items);
   }
 
-  final Map<String, TimelineItem> _cachedItems;
   @override
-  @JsonKey()
-  Map<String, TimelineItem> get cachedItems {
-    if (_cachedItems is EqualUnmodifiableMapView) return _cachedItems;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableMapView(_cachedItems);
-  }
+  final DateTime startDate;
+  @override
+  final DateTime endDate;
 
   @override
   String toString() {
-    return 'TimelineState.loaded(days: $days, selectedProject: $selectedProject, availableProjects: $availableProjects, pendingOperations: $pendingOperations, optimisticDays: $optimisticDays, cachedItems: $cachedItems)';
+    return 'TimelineState.loaded(selectedProject: $selectedProject, availableProjects: $availableProjects, days: $days, items: $items, startDate: $startDate, endDate: $endDate)';
   }
 
   @override
@@ -553,36 +536,28 @@ class _$TimelineLoadedImpl implements TimelineLoaded {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$TimelineLoadedImpl &&
-            const DeepCollectionEquality().equals(other._days, _days) &&
             (identical(other.selectedProject, selectedProject) ||
                 other.selectedProject == selectedProject) &&
             const DeepCollectionEquality().equals(
               other._availableProjects,
               _availableProjects,
             ) &&
-            const DeepCollectionEquality().equals(
-              other._pendingOperations,
-              _pendingOperations,
-            ) &&
-            const DeepCollectionEquality().equals(
-              other._optimisticDays,
-              _optimisticDays,
-            ) &&
-            const DeepCollectionEquality().equals(
-              other._cachedItems,
-              _cachedItems,
-            ));
+            const DeepCollectionEquality().equals(other._days, _days) &&
+            const DeepCollectionEquality().equals(other._items, _items) &&
+            (identical(other.startDate, startDate) ||
+                other.startDate == startDate) &&
+            (identical(other.endDate, endDate) || other.endDate == endDate));
   }
 
   @override
   int get hashCode => Object.hash(
     runtimeType,
-    const DeepCollectionEquality().hash(_days),
     selectedProject,
     const DeepCollectionEquality().hash(_availableProjects),
-    const DeepCollectionEquality().hash(_pendingOperations),
-    const DeepCollectionEquality().hash(_optimisticDays),
-    const DeepCollectionEquality().hash(_cachedItems),
+    const DeepCollectionEquality().hash(_days),
+    const DeepCollectionEquality().hash(_items),
+    startDate,
+    endDate,
   );
 
   /// Create a copy of TimelineState
@@ -602,23 +577,23 @@ class _$TimelineLoadedImpl implements TimelineLoaded {
     required TResult Function() initial,
     required TResult Function() loading,
     required TResult Function(
-      List<Day> days,
       Project? selectedProject,
       List<Project> availableProjects,
-      Set<String> pendingOperations,
-      Map<String, Day> optimisticDays,
-      Map<String, TimelineItem> cachedItems,
+      List<Day> days,
+      List<TimelineItem> items,
+      DateTime startDate,
+      DateTime endDate,
     )
     loaded,
     required TResult Function(Failure failure) error,
   }) {
     return loaded(
-      days,
       selectedProject,
       availableProjects,
-      pendingOperations,
-      optimisticDays,
-      cachedItems,
+      days,
+      items,
+      startDate,
+      endDate,
     );
   }
 
@@ -628,23 +603,23 @@ class _$TimelineLoadedImpl implements TimelineLoaded {
     TResult? Function()? initial,
     TResult? Function()? loading,
     TResult? Function(
-      List<Day> days,
       Project? selectedProject,
       List<Project> availableProjects,
-      Set<String> pendingOperations,
-      Map<String, Day> optimisticDays,
-      Map<String, TimelineItem> cachedItems,
+      List<Day> days,
+      List<TimelineItem> items,
+      DateTime startDate,
+      DateTime endDate,
     )?
     loaded,
     TResult? Function(Failure failure)? error,
   }) {
     return loaded?.call(
-      days,
       selectedProject,
       availableProjects,
-      pendingOperations,
-      optimisticDays,
-      cachedItems,
+      days,
+      items,
+      startDate,
+      endDate,
     );
   }
 
@@ -654,12 +629,12 @@ class _$TimelineLoadedImpl implements TimelineLoaded {
     TResult Function()? initial,
     TResult Function()? loading,
     TResult Function(
-      List<Day> days,
       Project? selectedProject,
       List<Project> availableProjects,
-      Set<String> pendingOperations,
-      Map<String, Day> optimisticDays,
-      Map<String, TimelineItem> cachedItems,
+      List<Day> days,
+      List<TimelineItem> items,
+      DateTime startDate,
+      DateTime endDate,
     )?
     loaded,
     TResult Function(Failure failure)? error,
@@ -667,12 +642,12 @@ class _$TimelineLoadedImpl implements TimelineLoaded {
   }) {
     if (loaded != null) {
       return loaded(
-        days,
         selectedProject,
         availableProjects,
-        pendingOperations,
-        optimisticDays,
-        cachedItems,
+        days,
+        items,
+        startDate,
+        endDate,
       );
     }
     return orElse();
@@ -718,20 +693,20 @@ class _$TimelineLoadedImpl implements TimelineLoaded {
 
 abstract class TimelineLoaded implements TimelineState {
   const factory TimelineLoaded({
-    required final List<Day> days,
     required final Project? selectedProject,
     required final List<Project> availableProjects,
-    final Set<String> pendingOperations,
-    final Map<String, Day> optimisticDays,
-    final Map<String, TimelineItem> cachedItems,
+    required final List<Day> days,
+    required final List<TimelineItem> items,
+    required final DateTime startDate,
+    required final DateTime endDate,
   }) = _$TimelineLoadedImpl;
 
-  List<Day> get days;
   Project? get selectedProject;
   List<Project> get availableProjects;
-  Set<String> get pendingOperations;
-  Map<String, Day> get optimisticDays;
-  Map<String, TimelineItem> get cachedItems;
+  List<Day> get days;
+  List<TimelineItem> get items;
+  DateTime get startDate;
+  DateTime get endDate;
 
   /// Create a copy of TimelineState
   /// with the given fields replaced by the non-null parameter values.
@@ -825,12 +800,12 @@ class _$TimelineErrorImpl implements TimelineError {
     required TResult Function() initial,
     required TResult Function() loading,
     required TResult Function(
-      List<Day> days,
       Project? selectedProject,
       List<Project> availableProjects,
-      Set<String> pendingOperations,
-      Map<String, Day> optimisticDays,
-      Map<String, TimelineItem> cachedItems,
+      List<Day> days,
+      List<TimelineItem> items,
+      DateTime startDate,
+      DateTime endDate,
     )
     loaded,
     required TResult Function(Failure failure) error,
@@ -844,12 +819,12 @@ class _$TimelineErrorImpl implements TimelineError {
     TResult? Function()? initial,
     TResult? Function()? loading,
     TResult? Function(
-      List<Day> days,
       Project? selectedProject,
       List<Project> availableProjects,
-      Set<String> pendingOperations,
-      Map<String, Day> optimisticDays,
-      Map<String, TimelineItem> cachedItems,
+      List<Day> days,
+      List<TimelineItem> items,
+      DateTime startDate,
+      DateTime endDate,
     )?
     loaded,
     TResult? Function(Failure failure)? error,
@@ -863,12 +838,12 @@ class _$TimelineErrorImpl implements TimelineError {
     TResult Function()? initial,
     TResult Function()? loading,
     TResult Function(
-      List<Day> days,
       Project? selectedProject,
       List<Project> availableProjects,
-      Set<String> pendingOperations,
-      Map<String, Day> optimisticDays,
-      Map<String, TimelineItem> cachedItems,
+      List<Day> days,
+      List<TimelineItem> items,
+      DateTime startDate,
+      DateTime endDate,
     )?
     loaded,
     TResult Function(Failure failure)? error,

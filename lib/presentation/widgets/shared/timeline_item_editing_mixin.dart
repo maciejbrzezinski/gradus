@@ -253,9 +253,12 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
     final currentState = context.read<TimelineCubit>().state;
     if (currentState is TimelineLoaded) {
       final focusCubit = context.read<FocusCubit>();
+      final days = currentState.selectedProject != null 
+          ? currentState.getDaysForProject(currentState.selectedProject!.id)
+          : currentState.days;
       final previousItemId = _controller.navigationService.findPreviousItemId(
         getCurrentItemId(), 
-        currentState.effectiveDays,
+        days,
       );
 
       if (previousItemId != null) {
@@ -272,9 +275,12 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
     final currentState = context.read<TimelineCubit>().state;
     if (currentState is TimelineLoaded) {
       final focusCubit = context.read<FocusCubit>();
+      final days = currentState.selectedProject != null 
+          ? currentState.getDaysForProject(currentState.selectedProject!.id)
+          : currentState.days;
       final nextItemId = _controller.navigationService.findNextItemId(
         getCurrentItemId(), 
-        currentState.effectiveDays,
+        days,
       );
 
       if (nextItemId != null) {
@@ -309,9 +315,9 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
           style: style,
           keyboardType: TextInputType.multiline,
           textInputAction: TextInputAction.done,
-          onFieldSubmitted: (_) {
-            onEnterPressed(isShiftPressed: false);
-          },
+          // onFieldSubmitted: (_) {
+          //   onEnterPressed(isShiftPressed: false);
+          // },
           decoration: const InputDecoration(
             border: InputBorder.none,
             contentPadding: EdgeInsets.zero,

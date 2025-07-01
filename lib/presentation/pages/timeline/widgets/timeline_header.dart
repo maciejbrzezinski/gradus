@@ -33,11 +33,10 @@ class TimelineHeader extends StatelessWidget {
             ),
             const SizedBox(width: AppTheme.spacing12),
             Text(
-              'Gradus', 
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-              ),
+              'Gradus',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
             ),
             const Spacer(),
             // Animated project tabs
@@ -50,7 +49,7 @@ class TimelineHeader extends StatelessWidget {
                     height: AppTheme.spacing20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  loaded: (days, selectedProject, availableProjects, _, __, ___) {
+                  loaded: (selectedProject, availableProjects, _, __, ___, ____) {
                     return AnimatedProjectTabs(
                       selectedProject: selectedProject,
                       availableProjects: availableProjects,
