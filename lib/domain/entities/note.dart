@@ -16,5 +16,19 @@ abstract class Note with _$Note {
     @Default(NoteType.text) NoteType type,
   }) = _Note;
 
+  factory Note.create({
+    required String content,
+    NoteType type = NoteType.text,
+  }) {
+    final now = DateTime.now();
+    return Note(
+      id: 'note_${now.millisecondsSinceEpoch}',
+      createdAt: now,
+      updatedAt: now,
+      content: content,
+      type: type,
+    );
+  }
+
   factory Note.fromJson(Map<String, dynamic> json) => _$NoteFromJson(json);
 }

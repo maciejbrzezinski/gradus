@@ -2,13 +2,12 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gradus/core/utils/date_utils.dart';
 import 'package:injectable/injectable.dart';
+import 'package:dartz/dartz.dart' hide Task;
 
 import '../../../core/error/failure.dart';
 import '../../../domain/entities/day.dart';
 import '../../../domain/entities/timeline_item.dart';
-import '../../../domain/entities/note.dart';
 import '../../../domain/entities/task.dart';
-import '../../../domain/entities/note_type.dart';
 import '../../../domain/usecases/days/get_days_usecase.dart';
 import '../../../domain/usecases/days/watch_days_usecase.dart';
 import '../../../domain/usecases/days/add_item_to_day_usecase.dart';
@@ -23,7 +22,6 @@ import '../../../domain/usecases/timeline_items/create_timeline_item_usecase.dar
 import '../../../domain/usecases/timeline_items/update_timeline_item_usecase.dart';
 import '../../../domain/usecases/timeline_items/delete_timeline_item_usecase.dart';
 import '../../../domain/usecases/timeline_items/complete_recurring_task_usecase.dart';
-import '../../../core/utils/text_commands.dart';
 import 'timeline_state.dart';
 
 @injectable
@@ -90,36 +88,34 @@ class TimelineCubit extends Cubit<TimelineState> {
 
           if (selectedProject != null) {
             // Load days for selected project
-            final daysResult = await _getDaysUseCase(
-              projectId: selectedProject.id,
-              startDate: _currentStartDate,
-              endDate: _currentEndDate,
+            final daysResult = await _loadDaysForProject(
+              selectedProject.id,
+              _currentStartDate,
+              _currentEndDate,
             );
 
-            await daysResult.fold((failure) async => emit(TimelineState.error(failure: failure)), (days) async {
-              // Get all item IDs from days
-              final allItemIds = <String>{};
-              for (final day in days) {
-                allItemIds.addAll(day.itemIds);
-              }
+            await daysResult.fold(
+              (failure) async => emit(TimelineState.error(failure: failure)),
+              (days) async {
+                // Extract item IDs and load items
+                final itemIds = _extractItemIdsFromDays(days);
+                final itemsResult = await _loadItemsForIds(itemIds);
 
-              // Load all items
-              final itemsResult = await _getTimelineItemsUseCase(allItemIds.toList());
-
-              itemsResult.fold(
-                (failure) => emit(TimelineState.error(failure: failure)),
-                (items) => emit(
-                  TimelineState.loaded(
-                    selectedProject: selectedProject,
-                    availableProjects: projects,
-                    days: days,
-                    items: items,
-                    startDate: _currentStartDate,
-                    endDate: _currentEndDate,
+                itemsResult.fold(
+                  (failure) => emit(TimelineState.error(failure: failure)),
+                  (items) => emit(
+                    TimelineState.loaded(
+                      selectedProject: selectedProject,
+                      availableProjects: projects,
+                      days: days,
+                      items: items,
+                      startDate: _currentStartDate,
+                      endDate: _currentEndDate,
+                    ),
                   ),
-                ),
-              );
-            });
+                );
+              },
+            );
           } else {
             emit(
               TimelineState.loaded(
@@ -183,17 +179,41 @@ class TimelineCubit extends Cubit<TimelineState> {
     }
   }
 
-  void _updateItemsWatching(List<Day> days) {
-    _itemsSubscription?.cancel();
-
-    // Get all item IDs from days
+  // Helper methods for reducing code duplication
+  List<String> _extractItemIdsFromDays(List<Day> days) {
     final allItemIds = <String>{};
     for (final day in days) {
       allItemIds.addAll(day.itemIds);
     }
+    return allItemIds.toList();
+  }
+
+  Future<Either<Failure, List<Day>>> _loadDaysForProject(
+    String projectId,
+    DateTime startDate,
+    DateTime endDate,
+  ) {
+    return _getDaysUseCase(
+      projectId: projectId,
+      startDate: startDate,
+      endDate: endDate,
+    );
+  }
+
+  Future<Either<Failure, List<TimelineItem>>> _loadItemsForIds(List<String> itemIds) {
+    if (itemIds.isEmpty) {
+      return Future.value(const Right([]));
+    }
+    return _getTimelineItemsUseCase(itemIds);
+  }
+
+  void _updateItemsWatching(List<Day> days) {
+    _itemsSubscription?.cancel();
+
+    final allItemIds = _extractItemIdsFromDays(days);
 
     if (allItemIds.isNotEmpty) {
-      _itemsSubscription = _watchTimelineItemsUseCase(allItemIds.toList()).listen((items) {
+      _itemsSubscription = _watchTimelineItemsUseCase(allItemIds).listen((items) {
         final currentState = state;
         if (currentState is TimelineLoaded) {
           if (items.length < allItemIds.length) {
@@ -214,40 +234,44 @@ class TimelineCubit extends Cubit<TimelineState> {
 
     final projectResult = await _getProjectByIdUseCase(projectId);
 
-    await projectResult.fold((failure) async => emit(TimelineState.error(failure: failure)), (project) async {
-      if (project == null) {
-        emit(const TimelineState.error(failure: Failure.validationFailure(message: 'Project not found')));
-        return;
-      }
-
-      // Load days for new project
-      final daysResult = await _getDaysUseCase(
-        projectId: project.id,
-        startDate: _currentStartDate,
-        endDate: _currentEndDate,
-      );
-
-      await daysResult.fold((failure) async => emit(TimelineState.error(failure: failure)), (days) async {
-        // Get all item IDs from days
-        final allItemIds = <String>{};
-        for (final day in days) {
-          allItemIds.addAll(day.itemIds);
+    await projectResult.fold(
+      (failure) async => emit(TimelineState.error(failure: failure)),
+      (project) async {
+        if (project == null) {
+          emit(const TimelineState.error(failure: Failure.validationFailure(message: 'Project not found')));
+          return;
         }
 
-        // Load all items
-        final itemsResult = await _getTimelineItemsUseCase(allItemIds.toList());
+        // Load days for new project
+        final daysResult = await _loadDaysForProject(
+          project.id,
+          _currentStartDate,
+          _currentEndDate,
+        );
 
-        itemsResult.fold((failure) => emit(TimelineState.error(failure: failure)), (items) {
-          final currentState = state;
-          if (currentState is TimelineLoaded) {
-            emit(currentState.copyWith(selectedProject: project, days: days, items: items));
-            // Start watching for changes
-            _watchDays();
-            _watchItems();
-          }
-        });
-      });
-    });
+        await daysResult.fold(
+          (failure) async => emit(TimelineState.error(failure: failure)),
+          (days) async {
+            // Extract item IDs and load items
+            final itemIds = _extractItemIdsFromDays(days);
+            final itemsResult = await _loadItemsForIds(itemIds);
+
+            itemsResult.fold(
+              (failure) => emit(TimelineState.error(failure: failure)),
+              (items) {
+                final currentState = state;
+                if (currentState is TimelineLoaded) {
+                  emit(currentState.copyWith(selectedProject: project, days: days, items: items));
+                  // Start watching for changes
+                  _watchDays();
+                  _watchItems();
+                }
+              },
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> loadMoreDays({bool loadPrevious = false}) async {
@@ -260,46 +284,52 @@ class TimelineCubit extends Cubit<TimelineState> {
     final currentState = state;
     if (currentState is TimelineLoaded && currentState.selectedProject != null) {
       // Load new data
-      final daysResult = await _getDaysUseCase(
-        projectId: currentState.selectedProject!.id,
-        startDate: _currentStartDate,
-        endDate: _currentEndDate,
+      final daysResult = await _loadDaysForProject(
+        currentState.selectedProject!.id,
+        _currentStartDate,
+        _currentEndDate,
       );
 
-      await daysResult.fold((failure) async => emit(TimelineState.error(failure: failure)), (days) async {
-        // Get all item IDs from days
-        final allItemIds = <String>{};
-        for (final day in days) {
-          allItemIds.addAll(day.itemIds);
-        }
+      await daysResult.fold(
+        (failure) async => emit(TimelineState.error(failure: failure)),
+        (days) async {
+          // Extract item IDs and load items
+          final itemIds = _extractItemIdsFromDays(days);
+          final itemsResult = await _loadItemsForIds(itemIds);
 
-        // Load all items
-        final itemsResult = await _getTimelineItemsUseCase(allItemIds.toList());
-
-        itemsResult.fold((failure) => emit(TimelineState.error(failure: failure)), (items) {
-          emit(currentState.copyWith(days: days, items: items, startDate: _currentStartDate, endDate: _currentEndDate));
-          // Update watching with new date range
-          _watchDays();
-          _watchItems();
-        });
-      });
+          itemsResult.fold(
+            (failure) => emit(TimelineState.error(failure: failure)),
+            (items) {
+              emit(currentState.copyWith(
+                days: days,
+                items: items,
+                startDate: _currentStartDate,
+                endDate: _currentEndDate,
+              ));
+              // Update watching with new date range
+              _watchDays();
+              _watchItems();
+            },
+          );
+        },
+      );
     }
   }
 
-  Future<void> createNote({required String content, required NoteType type, required Day day}) async {
+  Future<String?> createItem({
+    required Day day,
+    required TimelineItem timelineItem,
+  }) async {
     final currentState = state;
-    if (currentState is! TimelineLoaded) return;
+    if (currentState is! TimelineLoaded) return null;
 
-    final now = DateTime.now();
-    final noteId = 'note_${now.millisecondsSinceEpoch}';
-    final note = Note(id: noteId, createdAt: now, updatedAt: now, content: content, type: type);
-    final timelineItem = TimelineItem.note(note);
+    final itemId = timelineItem.id;
 
     // 1. Update state immediately
     final updatedItems = [...currentState.items, timelineItem];
     final updatedDays = currentState.days.map((d) {
-      if (d.date.isAtSameMomentAs(day.date) && d.projectId == day.projectId) {
-        return d.copyWith(itemIds: [...d.itemIds, noteId]);
+      if (d.date.isSameDay(day.date) && d.projectId == day.projectId) {
+        return d.copyWith(itemIds: [...d.itemIds, itemId]);
       }
       return d;
     }).toList();
@@ -309,15 +339,16 @@ class TimelineCubit extends Cubit<TimelineState> {
     // 2. Save in background (fire-and-forget)
     _saveInBackground(() async {
       await _createTimelineItemUseCase(timelineItem);
-      await _addItemToDayUseCase(itemId: noteId, day: day);
+      await _addItemToDayUseCase(itemId: itemId, day: day);
     });
+
+    return itemId;
   }
 
   Future<String?> createItemAfterCurrent({
     required String currentItemId,
     required Day day,
-    required ItemType itemType,
-    String? content,
+    required TimelineItem timelineItem,
   }) async {
     final currentState = state;
     if (currentState is! TimelineLoaded) return null;
@@ -330,26 +361,7 @@ class TimelineCubit extends Cubit<TimelineState> {
     }
 
     final insertIndex = currentIndex + 1;
-
-    final now = DateTime.now();
-    TimelineItem timelineItem;
-    String itemId;
-
-    if (itemType == ItemType.task) {
-      itemId = 'task_${now.millisecondsSinceEpoch}';
-      final task = Task(id: itemId, createdAt: now, updatedAt: now, title: content ?? '', isCompleted: false);
-      timelineItem = TimelineItem.task(task);
-    } else {
-      itemId = 'note_${now.millisecondsSinceEpoch}';
-      final note = Note(
-        id: itemId,
-        createdAt: now,
-        updatedAt: now,
-        content: content ?? '',
-        type: itemType.toNoteType(),
-      );
-      timelineItem = TimelineItem.note(note);
-    }
+    final itemId = timelineItem.id;
 
     // 1. Update state immediately
     final updatedItems = [...currentState.items, timelineItem];

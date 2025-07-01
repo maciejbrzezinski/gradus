@@ -78,14 +78,20 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
         saveChanges(currentContent);
         _originalTitle = currentContent;
 
+        // Create new task entity
+        final task = Task.create(
+          title: '',
+          isCompleted: false,
+        );
+        final timelineItem = TimelineItem.task(task);
+
         // Create new task after current one and set focus to it
         context
             .read<TimelineCubit>()
             .createItemAfterCurrent(
               currentItemId: widget.task.id,
               day: widget.day,
-              itemType: ItemType.task,
-              content: '',
+              timelineItem: timelineItem,
             )
             .then((newItemId) {
               if (newItemId != null && mounted) {

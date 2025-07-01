@@ -94,15 +94,18 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
         _currentContent = currentContent;
         _originalContent = currentContent;
 
-        // Determine the item type based on current note type
-        final itemType = _noteTypeToItemType(widget.note.type);
+        // Create new note entity
+        final note = Note.create(
+          content: '',
+          type: widget.note.type, // Same type as current note
+        );
+        final timelineItem = TimelineItem.note(note);
 
         // Create new note after current one and set focus to it
         context.read<TimelineCubit>().createItemAfterCurrent(
           currentItemId: widget.note.id,
           day: widget.day,
-          itemType: itemType,
-          content: '',
+          timelineItem: timelineItem,
         ).then((newItemId) {
           if (newItemId != null && mounted) {
             // Set focus to the newly created item
@@ -140,18 +143,6 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
     }
   }
 
-  ItemType _noteTypeToItemType(NoteType noteType) {
-    switch (noteType) {
-      case NoteType.text:
-        return ItemType.textNote;
-      case NoteType.headline1:
-        return ItemType.headline1;
-      case NoteType.headline2:
-        return ItemType.headline2;
-      case NoteType.headline3:
-        return ItemType.headline3;
-    }
-  }
 
   void _startEditing() {
     onFocusGained(widget.note.id);

@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/day.dart';
+import '../../../domain/entities/note.dart';
 import '../../../domain/entities/note_type.dart';
+import '../../../domain/entities/timeline_item.dart';
 import '../../cubits/timeline/timeline_cubit.dart';
 
 class EmptyDayWidget extends StatelessWidget {
@@ -45,10 +47,16 @@ class EmptyDayWidget extends StatelessWidget {
     print('🔍 [EmptyDayWidget] Creating first text note for day: ${day.date}');
 
     try {
-      await context.read<TimelineCubit>().createNote(
+      // Create note entity using factory constructor
+      final note = Note.create(
         content: '', // Empty content so it enters edit mode immediately
         type: NoteType.text,
+      );
+      final timelineItem = TimelineItem.note(note);
+
+      await context.read<TimelineCubit>().createItem(
         day: day,
+        timelineItem: timelineItem,
       );
 
       print('✅ [EmptyDayWidget] First note created successfully');
