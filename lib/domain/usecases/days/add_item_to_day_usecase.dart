@@ -26,7 +26,7 @@ class AddItemToDayUseCase {
       newItemIds.add(itemId);
     }
     
-    final updatedDay = day.copyWith(itemIds: newItemIds);
+    final updatedDay = day.copyWith(itemIds: newItemIds, updatedAt: DateTime.now());
     
     return _repository.updateDay(updatedDay).then((result) {
       return result.fold(

@@ -16,7 +16,7 @@ class RemoveItemFromDayUseCase {
     required Day day,
   }) {
     final updatedItemIds = List<String>.from(day.itemIds)..remove(itemId);
-    final updatedDay = day.copyWith(itemIds: updatedItemIds);
+    final updatedDay = day.copyWith(itemIds: updatedItemIds, updatedAt: DateTime.now());
     return _repository.updateDay(updatedDay).then((result) {
       return result.fold(
         (failure) => Left(failure),

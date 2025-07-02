@@ -25,6 +25,7 @@ class NoteCard extends StatefulWidget {
 class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
   String _originalContent = '';
   String _currentContent = '';
+  bool _isHovering = false;
 
   @override
   void initState() {
@@ -87,38 +88,38 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
     if (!isShiftPressed) {
       // Regular Enter - create new note of same type
       final currentContent = getCurrentText().trim();
-      if (currentContent.isNotEmpty) {
 
-        // Save current changes first and update the original content
+      // Save current changes first if content is not empty
+      if (currentContent.isNotEmpty) {
         saveChanges(currentContent);
         _currentContent = currentContent;
         _originalContent = currentContent;
-
-        // Create new note entity
-        final note = Note.create(
-          content: '',
-          type: widget.note.type, // Same type as current note
-        );
-        final timelineItem = TimelineItem.note(note);
-
-        // Create new note after current one and set focus to it
-        context.read<TimelineCubit>().createItemAfterCurrent(
-          currentItemId: widget.note.id,
-          day: widget.day,
-          timelineItem: timelineItem,
-        ).then((newItemId) {
-          if (newItemId != null && mounted) {
-            // Set focus to the newly created item
-            context.read<FocusCubit>().setFocus(newItemId);
-          }
-          
-          // Reset the flag and exit edit mode
-          if (mounted) {
-            setEditingState(false);
-          }
-        }).catchError((error) {
-        });
       }
+
+      // Create new note entity
+      final note = Note.create(
+        content: '',
+        type: widget.note.type, // Same type as current note
+      );
+      final timelineItem = TimelineItem.note(note);
+
+      // Create new note after current one and set focus to it
+      context.read<TimelineCubit>().createItemAfterCurrent(
+        currentItemId: widget.note.id,
+        day: widget.day,
+        timelineItem: timelineItem,
+      ).then((newItemId) {
+        if (newItemId != null && mounted) {
+          // Set focus to the newly created item
+          context.read<FocusCubit>().setFocus(newItemId);
+        }
+        
+        // Reset the flag and exit edit mode
+        if (mounted) {
+          setEditingState(false);
+        }
+      }).catchError((error) {
+      });
     }
     // Shift+Enter is handled by the TextFormField naturally (new line)
   }
@@ -192,19 +193,52 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
   }
 
   Widget _buildNoteCard(BuildContext context) {
-    return InkWell(
-      onTap: _startEditing,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing24, vertical: AppTheme.spacing4),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_buildNoteContent(context)]),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        transform: _isHovering ? (Matrix4.identity()..scale(1.02)) : Matrix4.identity(),
+        child: InkWell(
+          onTap: _startEditing,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing24, vertical: AppTheme.spacing4),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_buildNoteContent(context)]),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildNoteContent(BuildContext context, {bool isDragging = false}) {
-    return isEditing
-        ? buildEditingInput(context: context, style: _getNoteTextStyle(context))
-        : Text(_currentContent, style: _getNoteTextStyle(context));
+    if (isEditing) {
+      return buildEditingInput(context: context, style: _getNoteTextStyle(context));
+    }
+    
+    // If note is empty, show placeholder on hover
+    if (_currentContent.isEmpty) {
+      return SizedBox(
+        height: _getMinHeight(),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: AnimatedOpacity(
+            opacity: _isHovering ? 0.4 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            child: Text(
+              'Click to start typing...',
+              style: _getNoteTextStyle(context)?.copyWith(
+                fontStyle: FontStyle.italic,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    
+    return Text(_currentContent, style: _getNoteTextStyle(context));
   }
 
   TextStyle? _getNoteTextStyle(BuildContext context) {
@@ -225,6 +259,19 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
         return Theme.of(
           context,
         ).textTheme.bodyMedium?.copyWith(color: AppTheme.textPrimary, height: 1.5, fontWeight: FontWeight.w400);
+    }
+  }
+
+  double _getMinHeight() {
+    switch (widget.note.type) {
+      case NoteType.headline1:
+        return 40.0;
+      case NoteType.headline2:
+        return 32.0;
+      case NoteType.headline3:
+        return 28.0;
+      case NoteType.text:
+        return 24.0;
     }
   }
 }

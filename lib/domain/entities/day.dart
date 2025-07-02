@@ -9,6 +9,7 @@ abstract class Day with _$Day {
     required DateTime date,
     required String projectId,
     required List<String> itemIds, // Sorting responsibility - order matters
+    required DateTime updatedAt,
   }) = _Day;
 
   factory Day.fromJson(Map<String, dynamic> json) => _$DayFromJson(json);

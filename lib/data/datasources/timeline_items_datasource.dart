@@ -16,7 +16,6 @@ class TimelineItemsDataSource {
   final AuthService _authService;
   final LoggerService _logger;
 
-  // Single stream controller for all timeline items
   final StreamController<TimelineItem> _itemsController = StreamController<TimelineItem>.broadcast();
   bool _firestoreStreamInitialized = false;
 
@@ -35,16 +34,6 @@ class TimelineItemsDataSource {
 
   CollectionReference get _timelineItemsCollection =>
       _firestore.collection('users').doc(_userId).collection('timeline_items');
-
-  Stream<TimelineItem> watchTimelineItem(String itemId) {
-    _logger.i('🔍 [TimelineItemsDataSource] watchTimelineItem - itemId: $itemId');
-
-    // Initialize Firestore stream if not already done
-    _initializeFirestoreStream();
-
-    // Return filtered stream for specific item ID
-    return _itemsController.stream.where((item) => item.id == itemId);
-  }
 
   void _initializeFirestoreStream() {
     if (_firestoreStreamInitialized) return;
@@ -77,7 +66,7 @@ class TimelineItemsDataSource {
     _logger.i('📋 [TimelineItemsDataSource] getTimelineItem - itemId: $itemId');
 
     try {
-      final doc = await _timelineItemsCollection.doc(itemId).get(GetOptions(source: Source.cache));
+      final doc = await _timelineItemsCollection.doc(itemId).get();
 
       if (!doc.exists) {
         _logger.e('❌ [TimelineItemsDataSource] getTimelineItem - timeline item not found: $itemId');
@@ -89,26 +78,6 @@ class TimelineItemsDataSource {
 
       return item;
     } catch (e) {
-      if (e is FirebaseException && e.code == 'not-found') {
-        try {
-          _logger.e('❌ [TimelineItemsDataSource] getTimelineItem - item not found in cache, trying network: $itemId');
-          final doc = await _timelineItemsCollection.doc(itemId).get(GetOptions(source: Source.server));
-          if (!doc.exists) {
-            throw Exception('Timeline item not found: $itemId');
-          }
-          final item = _mapDocToTimelineItem(doc);
-          _logger.i(
-            '✅ [TimelineItemsDataSource] getTimelineItem - found item from network: $itemId, type: ${item.runtimeType}',
-          );
-          return item;
-        } catch (networkError) {
-          _logger.e(
-            '❌ [TimelineItemsDataSource] getTimelineItem - error fetching from network: $itemId',
-            error: networkError,
-          );
-          rethrow;
-        }
-      }
       _logger.e('❌ [TimelineItemsDataSource] getTimelineItem - error fetching item: $itemId', error: e);
       rethrow;
     }
@@ -210,37 +179,10 @@ class TimelineItemsDataSource {
     }
   }
 
-  Stream<List<TimelineItem>> watchTimelineItems(List<String> itemIds) {
-    _logger.i('🔍 [TimelineItemsDataSource] watchTimelineItems - itemIds: ${itemIds.length} items');
-
-    if (itemIds.isEmpty) return Stream.value([]);
-
-    // Initialize Firestore stream if not already done
+  Stream<TimelineItem> watchTimelineItems() {
+    _logger.i('🔍 [TimelineItemsDataSource] watchTimelineItems');
     _initializeFirestoreStream();
-
-    // Create a stream controller for the combined items
-    final controller = StreamController<List<TimelineItem>>.broadcast();
-    final Map<String, TimelineItem> itemsMap = {};
-
-    // Listen to individual item updates and build the list
-    final subscription = _itemsController.stream
-        .where((item) => itemIds.contains(item.id))
-        .listen((item) {
-          itemsMap[item.id] = item;
-          // Emit the current list of items in the order of itemIds
-          final orderedItems = itemIds
-              .where((id) => itemsMap.containsKey(id))
-              .map((id) => itemsMap[id]!)
-              .toList();
-          controller.add(orderedItems);
-        });
-
-    // Clean up when stream is cancelled
-    controller.onCancel = () {
-      subscription.cancel();
-    };
-
-    return controller.stream.distinct();
+    return _itemsController.stream.distinct();
   }
 
   TimelineItem _mapDataToTimelineItem(Map<String, dynamic> data) {

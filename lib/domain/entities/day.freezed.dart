@@ -23,7 +23,9 @@ Day _$DayFromJson(Map<String, dynamic> json) {
 mixin _$Day {
   DateTime get date => throw _privateConstructorUsedError;
   String get projectId => throw _privateConstructorUsedError;
-  List<String> get itemIds => throw _privateConstructorUsedError;
+  List<String> get itemIds =>
+      throw _privateConstructorUsedError; // Sorting responsibility - order matters
+  DateTime get updatedAt => throw _privateConstructorUsedError;
 
   /// Serializes this Day to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -39,7 +41,12 @@ abstract class $DayCopyWith<$Res> {
   factory $DayCopyWith(Day value, $Res Function(Day) then) =
       _$DayCopyWithImpl<$Res, Day>;
   @useResult
-  $Res call({DateTime date, String projectId, List<String> itemIds});
+  $Res call({
+    DateTime date,
+    String projectId,
+    List<String> itemIds,
+    DateTime updatedAt,
+  });
 }
 
 /// @nodoc
@@ -59,6 +66,7 @@ class _$DayCopyWithImpl<$Res, $Val extends Day> implements $DayCopyWith<$Res> {
     Object? date = null,
     Object? projectId = null,
     Object? itemIds = null,
+    Object? updatedAt = null,
   }) {
     return _then(
       _value.copyWith(
@@ -74,6 +82,10 @@ class _$DayCopyWithImpl<$Res, $Val extends Day> implements $DayCopyWith<$Res> {
                 ? _value.itemIds
                 : itemIds // ignore: cast_nullable_to_non_nullable
                       as List<String>,
+            updatedAt: null == updatedAt
+                ? _value.updatedAt
+                : updatedAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime,
           )
           as $Val,
     );
@@ -86,7 +98,12 @@ abstract class _$$DayImplCopyWith<$Res> implements $DayCopyWith<$Res> {
       __$$DayImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({DateTime date, String projectId, List<String> itemIds});
+  $Res call({
+    DateTime date,
+    String projectId,
+    List<String> itemIds,
+    DateTime updatedAt,
+  });
 }
 
 /// @nodoc
@@ -103,6 +120,7 @@ class __$$DayImplCopyWithImpl<$Res> extends _$DayCopyWithImpl<$Res, _$DayImpl>
     Object? date = null,
     Object? projectId = null,
     Object? itemIds = null,
+    Object? updatedAt = null,
   }) {
     return _then(
       _$DayImpl(
@@ -118,6 +136,10 @@ class __$$DayImplCopyWithImpl<$Res> extends _$DayCopyWithImpl<$Res, _$DayImpl>
             ? _value._itemIds
             : itemIds // ignore: cast_nullable_to_non_nullable
                   as List<String>,
+        updatedAt: null == updatedAt
+            ? _value.updatedAt
+            : updatedAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime,
       ),
     );
   }
@@ -130,6 +152,7 @@ class _$DayImpl implements _Day {
     required this.date,
     required this.projectId,
     required final List<String> itemIds,
+    required this.updatedAt,
   }) : _itemIds = itemIds;
 
   factory _$DayImpl.fromJson(Map<String, dynamic> json) =>
@@ -147,9 +170,13 @@ class _$DayImpl implements _Day {
     return EqualUnmodifiableListView(_itemIds);
   }
 
+  // Sorting responsibility - order matters
+  @override
+  final DateTime updatedAt;
+
   @override
   String toString() {
-    return 'Day(date: $date, projectId: $projectId, itemIds: $itemIds)';
+    return 'Day(date: $date, projectId: $projectId, itemIds: $itemIds, updatedAt: $updatedAt)';
   }
 
   @override
@@ -160,7 +187,9 @@ class _$DayImpl implements _Day {
             (identical(other.date, date) || other.date == date) &&
             (identical(other.projectId, projectId) ||
                 other.projectId == projectId) &&
-            const DeepCollectionEquality().equals(other._itemIds, _itemIds));
+            const DeepCollectionEquality().equals(other._itemIds, _itemIds) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -170,6 +199,7 @@ class _$DayImpl implements _Day {
     date,
     projectId,
     const DeepCollectionEquality().hash(_itemIds),
+    updatedAt,
   );
 
   /// Create a copy of Day
@@ -191,6 +221,7 @@ abstract class _Day implements Day {
     required final DateTime date,
     required final String projectId,
     required final List<String> itemIds,
+    required final DateTime updatedAt,
   }) = _$DayImpl;
 
   factory _Day.fromJson(Map<String, dynamic> json) = _$DayImpl.fromJson;
@@ -200,7 +231,9 @@ abstract class _Day implements Day {
   @override
   String get projectId;
   @override
-  List<String> get itemIds;
+  List<String> get itemIds; // Sorting responsibility - order matters
+  @override
+  DateTime get updatedAt;
 
   /// Create a copy of Day
   /// with the given fields replaced by the non-null parameter values.

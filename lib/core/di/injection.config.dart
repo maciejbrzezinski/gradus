@@ -62,8 +62,6 @@ import 'package:gradus/domain/usecases/timeline_items/get_timeline_items_usecase
     as _i407;
 import 'package:gradus/domain/usecases/timeline_items/update_timeline_item_usecase.dart'
     as _i1003;
-import 'package:gradus/domain/usecases/timeline_items/watch_timeline_item_usecase.dart'
-    as _i484;
 import 'package:gradus/domain/usecases/timeline_items/watch_timeline_items_usecase.dart'
     as _i239;
 import 'package:gradus/presentation/cubits/auth/auth_cubit.dart' as _i858;
@@ -186,9 +184,6 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i172.GetTimelineItemUseCase>(
       () => _i172.GetTimelineItemUseCase(gh<_i348.TimelineItemsRepository>()),
-    );
-    gh.factory<_i484.WatchTimelineItemUseCase>(
-      () => _i484.WatchTimelineItemUseCase(gh<_i348.TimelineItemsRepository>()),
     );
     gh.factory<_i239.WatchTimelineItemsUseCase>(
       () =>

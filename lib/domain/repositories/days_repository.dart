@@ -4,7 +4,7 @@ import '../../core/error/failure.dart';
 import '../entities/day.dart';
 
 abstract class DaysRepository {
-  Stream<List<Day>> watchDays({required String projectId, required DateTime startDate, required DateTime endDate});
+  Stream<Day> watchDays();
 
   Future<Either<Failure, Day>> updateDay(Day day);
 

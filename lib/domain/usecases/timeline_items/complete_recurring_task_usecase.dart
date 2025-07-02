@@ -105,6 +105,7 @@ class CompleteRecurringTaskUseCase {
       date: nextDate,
       projectId: projectId,
       itemIds: [],
+      updatedAt: DateTime.now(),
     );
 
     // Add task to timeline items
@@ -131,13 +132,14 @@ class CompleteRecurringTaskUseCase {
         (days) async {
           if (days.isEmpty) {
             // Day doesn't exist, create it with the task
-            final newDay = nextDay.copyWith(itemIds: [nextTask.id]);
+            final newDay = nextDay.copyWith(itemIds: [nextTask.id], updatedAt: DateTime.now());
             await _daysRepository.updateDay(newDay);
           } else {
             // Day exists, add task to it
             final existingDay = days.first;
             final updatedDay = existingDay.copyWith(
               itemIds: [...existingDay.itemIds, nextTask.id],
+              updatedAt: DateTime.now(),
             );
             await _daysRepository.updateDay(updatedDay);
           }

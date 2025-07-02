@@ -54,115 +54,53 @@ class TimelineCubit extends Cubit<TimelineState> {
     this._completeRecurringTaskUseCase,
   ) : super(const TimelineState.initial());
 
-  Future<void> loadTimelineForProject(
-    String projectId,
-    DateTime startDate,
-    DateTime endDate,
-  ) async {
+  Future<void> loadTimelineForProject(String projectId, DateTime startDate, DateTime endDate) async {
     emit(const TimelineState.loading());
 
     try {
-      final daysResult = await _getDaysUseCase(
-        projectId: projectId,
-        startDate: startDate,
-        endDate: endDate,
-      );
+      final daysResult = await _getDaysUseCase(projectId: projectId, startDate: startDate, endDate: endDate);
 
-      await daysResult.fold(
-        (failure) async => emit(TimelineState.error(failure: failure)),
-        (days) async {
-          // Load items for the days
-          final allItemIds = <String>{};
-          for (final day in days) {
-            allItemIds.addAll(day.itemIds);
-          }
-
-          List<TimelineItem> items = [];
-          if (allItemIds.isNotEmpty) {
-            final itemsResult = await _getTimelineItemsUseCase(allItemIds.toList());
-            itemsResult.fold(
-              (failure) => emit(TimelineState.error(failure: failure)),
-              (loadedItems) => items = loadedItems,
-            );
-          }
-
-          emit(TimelineState.loaded(
-            days: days,
-            items: items,
-            startDate: startDate,
-            endDate: endDate,
-            currentProjectId: projectId,
-          ));
-
-          _startWatching(projectId, startDate, endDate, allItemIds.toList());
-        },
-      );
-    } catch (e) {
-      emit(TimelineState.error(
-        failure: Failure.unknownFailure(message: e.toString()),
-      ));
-    }
-  }
-
-  void _startWatching(String projectId, DateTime startDate, DateTime endDate, List<String> itemIds) {
-    _daysSubscription?.cancel();
-    _itemsSubscription?.cancel();
-
-    // Watch days changes
-    _daysSubscription = _watchDaysUseCase(
-      projectId: projectId,
-      startDate: startDate,
-      endDate: endDate,
-    ).listen((days) {
-      final currentState = state;
-      if (currentState is TimelineLoaded) {
-        // Update item IDs when days change
+      await daysResult.fold((failure) async => emit(TimelineState.error(failure: failure)), (days) async {
+        // Load items for the days
         final allItemIds = <String>{};
         for (final day in days) {
           allItemIds.addAll(day.itemIds);
         }
 
-        // If item IDs changed, reload items
-        if (allItemIds.toSet() != itemIds.toSet()) {
-          _loadItemsForIds(allItemIds.toList(), currentState.copyWith(days: days));
-        } else {
-          emit(currentState.copyWith(days: days));
+        List<TimelineItem> items = [];
+        if (allItemIds.isNotEmpty) {
+          final itemsResult = await _getTimelineItemsUseCase(allItemIds.toList());
+          itemsResult.fold(
+            (failure) => emit(TimelineState.error(failure: failure)),
+            (loadedItems) => items = loadedItems,
+          );
         }
-      }
-    });
 
-    // Watch items changes
-    if (itemIds.isNotEmpty) {
-      _itemsSubscription = _watchTimelineItemsUseCase(itemIds).listen((items) {
-        _updateItemsIntelligently(items);
+        emit(
+          TimelineState.loaded(
+            days: days,
+            items: items,
+            startDate: startDate,
+            endDate: endDate,
+            currentProjectId: projectId,
+          ),
+        );
+
+        _startWatching(projectId, startDate, endDate, allItemIds.toList());
       });
+    } catch (e) {
+      emit(TimelineState.error(failure: Failure.unknownFailure(message: e.toString())));
     }
   }
 
-  Future<void> _loadItemsForIds(List<String> itemIds, TimelineLoaded currentState) async {
-    if (itemIds.isEmpty) {
-      emit(currentState.copyWith(items: []));
-      return;
-    }
+  void _startWatching(String projectId, DateTime startDate, DateTime endDate, List<String> itemIds) {
+    _daysSubscription ??= _watchDaysUseCase().listen((day) {
+      _updateDaysIntelligently(day);
+    });
 
-    try {
-      final itemsResult = await _getTimelineItemsUseCase(itemIds);
-      itemsResult.fold(
-        (failure) => emit(TimelineState.error(failure: failure)),
-        (items) {
-          emit(currentState.copyWith(items: items));
-          // Update items watching
-          _itemsSubscription?.cancel();
-          _itemsSubscription = _watchTimelineItemsUseCase(itemIds).listen((watchedItems) {
-            _updateItemsIntelligently(watchedItems);
-          });
-        },
-      );
-    } catch (e) {
-      emit(TimelineState.error(
-        failure: Failure.unknownFailure(message: e.toString()),
-      ));
-    }
+    _itemsSubscription ??= _watchTimelineItemsUseCase().listen((item) {
+      _updateItemsIntelligently(item);
+    });
   }
 
   Future<void> loadMoreDays({bool loadPrevious = false}) async {
@@ -185,45 +123,32 @@ class TimelineCubit extends Cubit<TimelineState> {
         endDate: newEndDate,
       );
 
-      await daysResult.fold(
-        (failure) async => emit(TimelineState.error(failure: failure)),
-        (days) async {
-          // Load items for the new days
-          final allItemIds = <String>{};
-          for (final day in days) {
-            allItemIds.addAll(day.itemIds);
-          }
+      await daysResult.fold((failure) async => emit(TimelineState.error(failure: failure)), (days) async {
+        // Load items for the new days
+        final allItemIds = <String>{};
+        for (final day in days) {
+          allItemIds.addAll(day.itemIds);
+        }
 
-          List<TimelineItem> items = [];
-          if (allItemIds.isNotEmpty) {
-            final itemsResult = await _getTimelineItemsUseCase(allItemIds.toList());
-            itemsResult.fold(
-              (failure) => emit(TimelineState.error(failure: failure)),
-              (loadedItems) => items = loadedItems,
-            );
-          }
+        List<TimelineItem> items = [];
+        if (allItemIds.isNotEmpty) {
+          final itemsResult = await _getTimelineItemsUseCase(allItemIds.toList());
+          itemsResult.fold(
+            (failure) => emit(TimelineState.error(failure: failure)),
+            (loadedItems) => items = loadedItems,
+          );
+        }
 
-          emit(currentState.copyWith(
-            days: days,
-            items: items,
-            startDate: newStartDate,
-            endDate: newEndDate,
-          ));
+        emit(currentState.copyWith(days: days, items: items, startDate: newStartDate, endDate: newEndDate));
 
-          _startWatching(currentState.currentProjectId!, newStartDate, newEndDate, allItemIds.toList());
-        },
-      );
+        _startWatching(currentState.currentProjectId!, newStartDate, newEndDate, allItemIds.toList());
+      });
     } catch (e) {
-      emit(TimelineState.error(
-        failure: Failure.unknownFailure(message: e.toString()),
-      ));
+      emit(TimelineState.error(failure: Failure.unknownFailure(message: e.toString())));
     }
   }
 
-  Future<String?> createItem({
-    required Day day,
-    required TimelineItem timelineItem,
-  }) async {
+  Future<String?> createItem({required Day day, required TimelineItem timelineItem}) async {
     final currentState = state;
     if (currentState is! TimelineLoaded) return null;
 
@@ -260,9 +185,7 @@ class TimelineCubit extends Cubit<TimelineState> {
 
     final currentIndex = day.itemIds.indexOf(currentItemId);
     if (currentIndex == -1) {
-      emit(const TimelineState.error(
-        failure: Failure.validationFailure(message: 'Current item not found'),
-      ));
+      emit(const TimelineState.error(failure: Failure.validationFailure(message: 'Current item not found')));
       return null;
     }
 
@@ -307,26 +230,19 @@ class TimelineCubit extends Cubit<TimelineState> {
     _saveInBackground(() => _updateTimelineItemUseCase(item));
   }
 
-  Future<void> deleteItemFromDay({
-    required String itemId,
-    required Day day,
-  }) async {
+  Future<void> deleteItemFromDay({required String itemId, required Day day}) async {
     final currentState = state;
     if (currentState is! TimelineLoaded) return;
 
     // Optimistically update the state
     final updatedDays = currentState.days.map((d) {
       if (d.date.isSameDay(day.date) && d.projectId == day.projectId) {
-        return d.copyWith(
-          itemIds: d.itemIds.where((id) => id != itemId).toList(),
-        );
+        return d.copyWith(itemIds: d.itemIds.where((id) => id != itemId).toList());
       }
       return d;
     }).toList();
 
-    final updatedItems = currentState.items
-        .where((item) => item.id != itemId)
-        .toList();
+    final updatedItems = currentState.items.where((item) => item.id != itemId).toList();
 
     emit(currentState.copyWith(days: updatedDays, items: updatedItems));
 
@@ -346,8 +262,7 @@ class TimelineCubit extends Cubit<TimelineState> {
     final currentState = state;
     if (currentState is! TimelineLoaded) return;
 
-    final isSameDay = fromDay.date.isAtSameMomentAs(toDay.date) && 
-                     fromDay.projectId == toDay.projectId;
+    final isSameDay = fromDay.date.isAtSameMomentAs(toDay.date) && fromDay.projectId == toDay.projectId;
 
     // Optimistically update the state
     final updatedDays = currentState.days.map((day) {
@@ -381,20 +296,11 @@ class TimelineCubit extends Cubit<TimelineState> {
 
     // Save in background
     _saveInBackground(
-      () => _moveItemBetweenDaysUseCase(
-        itemId: itemId,
-        fromDay: fromDay,
-        toDay: toDay,
-        toIndex: toIndex,
-      ),
+      () => _moveItemBetweenDaysUseCase(itemId: itemId, fromDay: fromDay, toDay: toDay, toIndex: toIndex),
     );
   }
 
-  Future<void> completeRecurringTask({
-    required Task task,
-    required Day day,
-    required bool isCompleted,
-  }) async {
+  Future<void> completeRecurringTask({required Task task, required Day day, required bool isCompleted}) async {
     final currentState = state;
     if (currentState is! TimelineLoaded) return;
 
@@ -410,28 +316,49 @@ class TimelineCubit extends Cubit<TimelineState> {
     emit(currentState.copyWith(items: updatedItems));
 
     // Handle recurring task completion
-    final result = await _completeRecurringTaskUseCase(
-      task: task,
-      currentDay: day,
-      isCompleted: isCompleted,
-    );
+    final result = await _completeRecurringTaskUseCase(task: task, currentDay: day, isCompleted: isCompleted);
 
-    result.fold(
-      (failure) {
-        // Revert the optimistic update on failure
-        final revertedItems = currentState.items.map((item) {
-          if (item.id == task.id) {
-            return TimelineItem.task(task);
-          }
-          return item;
-        }).toList();
-        emit(currentState.copyWith(items: revertedItems));
-      },
-      (_) {},
-    );
+    result.fold((failure) {
+      // Revert the optimistic update on failure
+      final revertedItems = currentState.items.map((item) {
+        if (item.id == task.id) {
+          return TimelineItem.task(task);
+        }
+        return item;
+      }).toList();
+      emit(currentState.copyWith(items: revertedItems));
+    }, (_) {});
   }
 
-  void _updateItemsIntelligently(List<TimelineItem> newItems) {
+  void _updateDaysIntelligently(Day newDay) {
+    final currentState = state;
+    if (currentState is! TimelineLoaded) return;
+
+    final currentDays = List<Day>.from(currentState.days);
+    bool hasChanges = false;
+
+    final lookupNewDay = currentDays.indexWhere(
+      (d) => d.date.isSameDay(newDay.date) && d.projectId == newDay.projectId,
+    );
+    if (lookupNewDay == -1) {
+      // New day added
+      currentDays.add(newDay);
+      hasChanges = true;
+    } else {
+      // Existing day, check for updates based on updatedAt timestamp
+      final currentDay = currentDays[lookupNewDay];
+      if (newDay.updatedAt.isAfter(currentDay.updatedAt)) {
+        currentDays[lookupNewDay] = newDay;
+        hasChanges = true;
+      }
+    }
+
+    if (hasChanges) {
+      emit(currentState.copyWith(days: currentDays));
+    }
+  }
+
+  void _updateItemsIntelligently(TimelineItem item) {
     final currentState = state;
     if (currentState is! TimelineLoaded) return;
 
@@ -439,34 +366,30 @@ class TimelineCubit extends Cubit<TimelineState> {
     bool hasChanges = false;
 
     // Create a map of new items for efficient lookup
-    final newItemsMap = {for (var item in newItems) item.id: item};
-
-    // Iterate through current list and update existing items
-    for (int i = 0; i < currentItems.length; i++) {
-      final currentItem = currentItems[i];
-      final newItem = newItemsMap[currentItem.id];
-      
-      if (newItem != null) {
-        // Item exists in new data - check if it changed
-        if (newItem.updatedAt.isAfter(currentItem.updatedAt)) {
-          currentItems[i] = newItem;
-          hasChanges = true;
-        }
-        // Remove from map so only new items remain
-        newItemsMap.remove(currentItem.id);
-      }
-    }
-
-    // Add new items (those remaining in the map)
-    if (newItemsMap.isNotEmpty) {
-      currentItems.addAll(newItemsMap.values);
+    final lookupItem = currentItems.indexWhere((i) => i.id == item.id);
+    if (lookupItem == -1) {
+      currentItems.add(item);
       hasChanges = true;
+    } else {
+      // Existing item, update it
+      if (currentItems[lookupItem].updatedAt.isBefore(item.updatedAt)) {
+        currentItems[lookupItem] = item;
+        hasChanges = true;
+      }
     }
 
     // Emit only if there were changes
     if (hasChanges) {
       emit(currentState.copyWith(items: currentItems));
     }
+  }
+
+  bool _listEquals<T>(List<T> a, List<T> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   void _saveInBackground(Future<void> Function() operation) {

@@ -9,7 +9,7 @@ class WatchTimelineItemsUseCase {
 
   WatchTimelineItemsUseCase(this._repository);
 
-  Stream<List<TimelineItem>> call(List<String> itemIds) {
-    return _repository.watchTimelineItems(itemIds);
+  Stream<TimelineItem> call() {
+    return _repository.watchTimelineItems();
   }
 }

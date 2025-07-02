@@ -9,7 +9,7 @@ class WatchDaysUseCase {
 
   WatchDaysUseCase(this._repository);
 
-  Stream<List<Day>> call({required String projectId, required DateTime startDate, required DateTime endDate}) {
-    return _repository.watchDays(projectId: projectId, startDate: startDate, endDate: endDate);
+  Stream<Day> call() {
+    return _repository.watchDays();
   }
 }

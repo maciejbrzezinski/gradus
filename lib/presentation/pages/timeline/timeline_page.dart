@@ -75,6 +75,8 @@ class _TimelinePageContent extends StatelessWidget {
                             onLoadMoreDays: (loadPrevious) {
                               context.read<TimelineCubit>().loadMoreDays(loadPrevious: loadPrevious);
                             },
+                            dateFrom: timelineState.startDate,
+                            dateTo: timelineState.endDate,
                           );
                         }
                         

@@ -13,17 +13,6 @@ class TimelineItemsRepositoryImpl implements TimelineItemsRepository {
   TimelineItemsRepositoryImpl(this._dataSource);
 
   @override
-  Stream<TimelineItem> watchTimelineItem(String itemId) {
-    try {
-      return _dataSource.watchTimelineItem(itemId).handleError((error) {
-        return Left(Failure.unknownFailure(message: error.toString()));
-      });
-    } catch (e) {
-      return Stream.empty();
-    }
-  }
-
-  @override
   Future<Either<Failure, TimelineItem>> getTimelineItem(String itemId) async {
     try {
       final item = await _dataSource.getTimelineItem(itemId);
@@ -46,7 +35,6 @@ class TimelineItemsRepositoryImpl implements TimelineItemsRepository {
   @override
   Future<Either<Failure, Unit>> updateTimelineItem(TimelineItem item) async {
     try {
-
       await _dataSource.updateTimelineItem(item);
       return const Right(unit);
     } catch (e) {
@@ -75,9 +63,9 @@ class TimelineItemsRepositoryImpl implements TimelineItemsRepository {
   }
 
   @override
-  Stream<List<TimelineItem>> watchTimelineItems(List<String> itemIds) {
+  Stream<TimelineItem> watchTimelineItems() {
     try {
-      return _dataSource.watchTimelineItems(itemIds).handleError((error) {
+      return _dataSource.watchTimelineItems().handleError((error) {
         return Left(Failure.unknownFailure(message: error.toString()));
       });
     } catch (e) {

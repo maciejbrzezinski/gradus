@@ -13,9 +13,9 @@ class DaysRepositoryImpl implements DaysRepository {
   DaysRepositoryImpl(this._dataSource);
 
   @override
-  Stream<List<Day>> watchDays({required String projectId, required DateTime startDate, required DateTime endDate}) {
+  Stream<Day> watchDays() {
     try {
-      return _dataSource.watchDays(projectId: projectId, startDate: startDate, endDate: endDate).handleError((error) {
+      return _dataSource.watchDays().handleError((error) {
         return Left(Failure.unknownFailure(message: error.toString()));
       });
     } catch (e) {

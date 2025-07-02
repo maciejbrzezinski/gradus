@@ -9,9 +9,18 @@ import 'day_column.dart';
 class TimelineView extends StatefulWidget {
   final List<Day> days;
   final Project? selectedProject;
+  final DateTime dateFrom;
+  final DateTime dateTo;
   final Function(bool loadPrevious) onLoadMoreDays;
 
-  const TimelineView({super.key, required this.days, required this.selectedProject, required this.onLoadMoreDays});
+  const TimelineView({
+    super.key,
+    required this.days,
+    required this.selectedProject,
+    required this.onLoadMoreDays,
+    required this.dateFrom,
+    required this.dateTo,
+  });
 
   @override
   State<TimelineView> createState() => _TimelineViewState();
@@ -79,6 +88,7 @@ class _TimelineViewState extends State<TimelineView> {
     if (widget.days.isEmpty) {
       return _buildEmptyState(context);
     }
+    final daysCount = widget.dateFrom.difference(widget.dateTo).inDays.abs() + 1;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing16),
@@ -86,9 +96,14 @@ class _TimelineViewState extends State<TimelineView> {
         controller: _scrollController,
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        itemCount: widget.days.length,
+        itemCount: daysCount,
         itemBuilder: (context, index) {
-          final day = widget.days[index];
+          final date = widget.dateFrom.add(Duration(days: index));
+
+          final day = widget.days.firstWhere(
+            (day) => day.date.isSameDay(date),
+            orElse: () => Day(date: date, projectId: widget.selectedProject?.id ?? '', itemIds: [], updatedAt: DateTime.now()),
+          );
           final isToday = day.date.isToday();
 
           return Padding(
