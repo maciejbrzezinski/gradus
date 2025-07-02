@@ -26,6 +26,7 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
   String _originalContent = '';
   String _currentContent = '';
   bool _isHovering = false;
+  bool _hasUnsavedChanges = false;
 
   @override
   void initState() {
@@ -34,8 +35,7 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
     _currentContent = widget.note.content;
     setupSmartTextController(initialText: _originalContent);
 
-    // Auto-enter edit mode if content is empty (newly created item)
-    if (widget.note.content.isEmpty) {
+    if (context.read<FocusCubit>().isFocused(widget.note.id)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _startEditing();
       });
@@ -45,8 +45,8 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
   @override
   void didUpdateWidget(NoteCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Update current content when the widget updates (e.g., from stream)
-    if (widget.note.content != oldWidget.note.content) {
+    // Only update content from stream if we don't have unsaved changes and we're not currently editing
+    if (widget.note.content != oldWidget.note.content && !_hasUnsavedChanges && !isEditing) {
       _currentContent = widget.note.content;
       _originalContent = widget.note.content;
     }
@@ -60,7 +60,8 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
       // Transform note to task - create task with same ID
       final task = Task(
         id: widget.note.id,
-        createdAt: widget.note.createdAt, // Keep original timestamps
+        createdAt: widget.note.createdAt,
+        // Keep original timestamps
         updatedAt: DateTime.now(),
         title: newContent,
         isCompleted: false,
@@ -68,14 +69,10 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
       await timelineCubit.updateTimelineItem(TimelineItem.task(task));
     } else if (newType.isHeadline || newType == ItemType.textNote) {
       // Transform note type - create note with new type
-      final note = widget.note.copyWith(
-        content: newContent,
-        type: newType.toNoteType(),
-        updatedAt: DateTime.now(),
-      );
+      final note = widget.note.copyWith(content: newContent, type: newType.toNoteType(), updatedAt: DateTime.now());
       await timelineCubit.updateTimelineItem(TimelineItem.note(note));
     }
-    
+
     if (mounted) {
       context.read<FocusCubit>().setFocus(widget.note.id);
     }
@@ -104,22 +101,19 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
       final timelineItem = TimelineItem.note(note);
 
       // Create new note after current one and set focus to it
-      context.read<TimelineCubit>().createItemAfterCurrent(
+      final newItemId = context.read<TimelineCubit>().createItemAfterCurrent(
         currentItemId: widget.note.id,
         day: widget.day,
         timelineItem: timelineItem,
-      ).then((newItemId) {
-        if (newItemId != null && mounted) {
-          // Set focus to the newly created item
-          context.read<FocusCubit>().setFocus(newItemId);
-        }
-        
-        // Reset the flag and exit edit mode
-        if (mounted) {
-          setEditingState(false);
-        }
-      }).catchError((error) {
-      });
+      );
+      if (newItemId != null && mounted) {
+        context.read<FocusCubit>().setFocus(newItemId);
+      }
+
+      // Reset the flag and exit edit mode
+      if (mounted) {
+        setEditingState(false);
+      }
     }
     // Shift+Enter is handled by the TextFormField naturally (new line)
   }
@@ -136,14 +130,39 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
 
   @override
   void saveChanges(String newContent) {
-    if (newContent.trim() != _originalContent && newContent.trim().isNotEmpty) {
-      final updatedNote = widget.note.copyWith(content: newContent.trim());
+    final trimmedContent = newContent.trim();
+    
+    // Always update local state first
+    if (mounted) {
+      setState(() {
+        _currentContent = trimmedContent;
+        _hasUnsavedChanges = false;
+      });
+    }
+    
+    // Only save to backend if content actually changed and is not empty
+    if (trimmedContent != _originalContent && trimmedContent.isNotEmpty) {
+      final updatedNote = widget.note.copyWith(
+        content: trimmedContent,
+        updatedAt: DateTime.now(),
+      );
       context.read<TimelineCubit>().updateTimelineItem(TimelineItem.note(updatedNote));
-      _originalContent = newContent.trim();
-      _currentContent = newContent.trim();
+      _originalContent = trimmedContent;
     }
   }
 
+  @override
+  void onRegularTextChange(String text) {
+    // Mark as having unsaved changes when text changes during editing
+    if (isEditing && text.trim() != _originalContent) {
+      setState(() {
+        _hasUnsavedChanges = true;
+      });
+    }
+    
+    // Call parent implementation for debounced save
+    super.onRegularTextChange(text);
+  }
 
   void _startEditing() {
     onFocusGained(widget.note.id);
@@ -215,7 +234,7 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
     if (isEditing) {
       return buildEditingInput(context: context, style: _getNoteTextStyle(context));
     }
-    
+
     // If note is empty, show placeholder on hover
     if (_currentContent.isEmpty) {
       return SizedBox(
@@ -228,16 +247,13 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
             curve: Curves.easeInOut,
             child: Text(
               'Click to start typing...',
-              style: _getNoteTextStyle(context)?.copyWith(
-                fontStyle: FontStyle.italic,
-                color: AppTheme.textSecondary,
-              ),
+              style: _getNoteTextStyle(context)?.copyWith(fontStyle: FontStyle.italic, color: AppTheme.textSecondary),
             ),
           ),
         ),
       );
     }
-    
+
     return Text(_currentContent, style: _getNoteTextStyle(context));
   }
 

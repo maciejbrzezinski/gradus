@@ -12,9 +12,8 @@ import '../../cubits/timeline/timeline_state.dart';
 
 /// Simplified mixin that coordinates all editing functionality through services
 mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
-  
   late TimelineItemEditingController _controller;
-  
+
   // Editing state
   bool _isEditing = false;
   Timer? _debounceTimer;
@@ -25,6 +24,7 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
   bool _isProcessingArrowKey = false;
 
   bool get isEditing => _isEditing;
+
   bool get isCreatingNewItem => _isCreatingNewItem;
 
   @override
@@ -89,11 +89,13 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
 
     // Skip regular text change processing if we're creating a new item
     if (!_isCreatingNewItem) {
-      onRegularTextChange(_controller.textInputService.text);
+      // Save changes immediately on focus loss instead of debounced save
+      final currentText = _controller.textInputService.text;
+      saveChanges(currentText);
     }
 
     // Don't clear focus if we're creating a new item
-    if (!_isCreatingNewItem) {
+    if (!_isCreatingNewItem && context.read<FocusCubit>().isFocused(getCurrentItemId())) {
       context.read<FocusCubit>().clearFocus();
     }
 
@@ -113,8 +115,8 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
 
   /// Handle regular text changes (non-command text)
   void onRegularTextChange(String text) {
-    // Default implementation with debouncing
-    debouncedSave(text, const Duration(milliseconds: 500), () {
+    // Default implementation with shorter debouncing for better responsiveness
+    debouncedSave(text, const Duration(milliseconds: 200), () {
       saveChanges(text);
     });
   }
@@ -123,11 +125,6 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
   void debouncedSave(String content, Duration delay, VoidCallback saveCallback) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(delay, saveCallback);
-  }
-
-  /// Check if this item should have focus based on FocusCubit state
-  bool shouldHaveFocus(String itemId) {
-    return context.read<FocusCubit>().isFocused(itemId);
   }
 
   /// Handle keyboard events
@@ -254,10 +251,7 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
     if (currentState is TimelineLoaded) {
       final focusCubit = context.read<FocusCubit>();
       final days = currentState.days;
-      final previousItemId = _controller.navigationService.findPreviousItemId(
-        getCurrentItemId(), 
-        days,
-      );
+      final previousItemId = _controller.navigationService.findPreviousItemId(getCurrentItemId(), days);
 
       if (previousItemId != null) {
         focusCubit.setFocus(previousItemId);
@@ -274,10 +268,7 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
     if (currentState is TimelineLoaded) {
       final focusCubit = context.read<FocusCubit>();
       final days = currentState.days;
-      final nextItemId = _controller.navigationService.findNextItemId(
-        getCurrentItemId(), 
-        days,
-      );
+      final nextItemId = _controller.navigationService.findNextItemId(getCurrentItemId(), days);
 
       if (nextItemId != null) {
         focusCubit.setFocus(nextItemId);
@@ -289,11 +280,7 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
   }
 
   /// Build editing input widget
-  Widget buildEditingInput({
-    required BuildContext context, 
-    required TextStyle? style, 
-    bool autofocus = true,
-  }) {
+  Widget buildEditingInput({required BuildContext context, required TextStyle? style, bool autofocus = true}) {
     return Focus(
       onFocusChange: (hasFocus) {
         if (!hasFocus) {
@@ -311,9 +298,6 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
           style: style,
           keyboardType: TextInputType.multiline,
           textInputAction: TextInputAction.done,
-          // onFieldSubmitted: (_) {
-          //   onEnterPressed(isShiftPressed: false);
-          // },
           decoration: const InputDecoration(
             border: InputBorder.none,
             contentPadding: EdgeInsets.zero,

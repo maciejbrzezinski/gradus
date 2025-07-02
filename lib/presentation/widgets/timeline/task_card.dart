@@ -25,6 +25,8 @@ class TaskCard extends StatefulWidget {
 
 class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
   String _originalTitle = '';
+  String _currentTitle = '';
+  bool _hasUnsavedChanges = false;
   final GlobalKey calendarIconKey = GlobalKey();
   bool _isHovered = false;
 
@@ -32,13 +34,27 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
   void initState() {
     super.initState();
     _originalTitle = widget.task.title;
+    _currentTitle = widget.task.title;
     setupSmartTextController(initialText: _originalTitle);
 
     // Auto-enter edit mode if title is empty (newly created item)
+    // Only if this task should have focus according to FocusCubit
     if (widget.task.title.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _startEditing();
+        if (mounted && context.read<FocusCubit>().isFocused(widget.task.id)) {
+          _startEditing();
+        }
       });
+    }
+  }
+
+  @override
+  void didUpdateWidget(TaskCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only update title from stream if we don't have unsaved changes and we're not currently editing
+    if (widget.task.title != oldWidget.task.title && !_hasUnsavedChanges && !isEditing) {
+      _currentTitle = widget.task.title;
+      _originalTitle = widget.task.title;
     }
   }
 
@@ -48,16 +64,14 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
 
     if (newType == ItemType.task) {
       // Update task title - create updated task
-      final task = widget.task.copyWith(
-        title: newContent,
-        updatedAt: DateTime.now(),
-      );
+      final task = widget.task.copyWith(title: newContent, updatedAt: DateTime.now());
       await timelineCubit.updateTimelineItem(TimelineItem.task(task));
     } else if (newType.isHeadline || newType == ItemType.textNote) {
       // Transform task to note - create note with same ID
       final note = Note(
         id: widget.task.id,
-        createdAt: widget.task.createdAt, // Keep original timestamps
+        createdAt: widget.task.createdAt,
+        // Keep original timestamps
         updatedAt: DateTime.now(),
         content: newContent,
         type: newType.toNoteType(),
@@ -78,33 +92,31 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
         saveChanges(currentContent);
         _originalTitle = currentContent;
 
+        // Set flag to indicate we're creating a new item
+        setCreatingNewItem(true);
+
         // Create new task entity
-        final task = Task.create(
-          title: '',
-          isCompleted: false,
-        );
+        final task = Task.create(title: '', isCompleted: false);
         final timelineItem = TimelineItem.task(task);
 
         // Create new task after current one and set focus to it
-        context
-            .read<TimelineCubit>()
-            .createItemAfterCurrent(
-              currentItemId: widget.task.id,
-              day: widget.day,
-              timelineItem: timelineItem,
-            )
-            .then((newItemId) {
-              if (newItemId != null && mounted) {
-                // Set focus to the newly created item
-                context.read<FocusCubit>().setFocus(newItemId);
-              }
+        final newItemId = context.read<TimelineCubit>().createItemAfterCurrent(
+          currentItemId: widget.task.id,
+          day: widget.day,
+          timelineItem: timelineItem,
+        );
+        if (newItemId != null && mounted) {
+          // Set focus to the newly created item
+          context.read<FocusCubit>().setFocus(newItemId);
+        }
 
-              // Reset the flag and exit edit mode
-              if (mounted) {
-                setEditingState(false);
-              }
-            })
-            .catchError((error) {});
+        // Reset the flag and exit edit mode
+        if (mounted) {
+          if (mounted) {
+            setCreatingNewItem(false);
+            setEditingState(false);
+          }
+        }
       }
     }
     // Shift+Enter is handled by the TextFormField naturally (new line)
@@ -122,11 +134,38 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
 
   @override
   void saveChanges(String newTitle) {
-    if (newTitle.trim() != _originalTitle && newTitle.trim().isNotEmpty) {
-      final updatedTask = widget.task.copyWith(title: newTitle.trim());
-      context.read<TimelineCubit>().updateTimelineItem(TimelineItem.task(updatedTask));
-      _originalTitle = newTitle.trim();
+    final trimmedTitle = newTitle.trim();
+    
+    // Always update local state first
+    if (mounted) {
+      setState(() {
+        _currentTitle = trimmedTitle;
+        _hasUnsavedChanges = false;
+      });
     }
+    
+    // Only save to backend if title actually changed and is not empty
+    if (trimmedTitle != _originalTitle && trimmedTitle.isNotEmpty) {
+      final updatedTask = widget.task.copyWith(
+        title: trimmedTitle,
+        updatedAt: DateTime.now(),
+      );
+      context.read<TimelineCubit>().updateTimelineItem(TimelineItem.task(updatedTask));
+      _originalTitle = trimmedTitle;
+    }
+  }
+
+  @override
+  void onRegularTextChange(String text) {
+    // Mark as having unsaved changes when text changes during editing
+    if (isEditing && text.trim() != _originalTitle) {
+      setState(() {
+        _hasUnsavedChanges = true;
+      });
+    }
+    
+    // Call parent implementation for debounced save
+    super.onRegularTextChange(text);
   }
 
   void _startEditing() {

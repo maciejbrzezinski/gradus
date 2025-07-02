@@ -34,76 +34,56 @@ class _TimelineItemWidgetState extends State<TimelineItemWidget> {
           (item) => item?.id == widget.itemId,
           orElse: () => null,
         );
-        
+
         if (item == null) {
           // Item not yet loaded, show minimal loading
           return _buildLoadingWidget();
         }
 
-        return _buildItemWidget(item, widget.day);
+        return MouseRegion(
+          key: Key('timeline_item_${widget.itemId}_${item.updatedAt.toIso8601String()}'),
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag indicator
+              Padding(
+                padding: const EdgeInsets.only(left: AppTheme.spacing8, top: AppTheme.spacing8),
+                child: AnimatedOpacity(
+                  opacity: _isHovered ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 100),
+                  child: Icon(Icons.drag_indicator, size: 16, color: AppTheme.textSecondary.withValues(alpha: 0.6)),
+                ),
+              ),
+              // Timeline item content
+              Expanded(
+                child: item.when(
+                  task: (task) => TaskCard(task: task, day: widget.day),
+                  note: (note) => NoteCard(note: note, day: widget.day),
+                ),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
 
   Widget _buildLoadingWidget() {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacing24,
-        vertical: AppTheme.spacing8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing24, vertical: AppTheme.spacing8),
       child: const Row(
         children: [
           SizedBox(
             width: 14,
             height: 14,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: AppTheme.primaryColor,
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
           ),
           SizedBox(width: AppTheme.spacing12),
           Text(
             'Loading...',
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildItemWidget(TimelineItem item, Day day) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag indicator
-          Padding(
-            padding: const EdgeInsets.only(
-              left: AppTheme.spacing8,
-              top: AppTheme.spacing8,
-            ),
-            child: AnimatedOpacity(
-              opacity: _isHovered ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 100),
-              child: Icon(
-                Icons.drag_indicator,
-                size: 16,
-                color: AppTheme.textSecondary.withValues(alpha: 0.6),
-              ),
-            ),
-          ),
-          // Timeline item content
-          Expanded(
-            child: item.when(
-              task: (task) => TaskCard(task: task, day: day),
-              note: (note) => NoteCard(note: note, day: day),
-            ),
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 14, fontWeight: FontWeight.w400),
           ),
         ],
       ),

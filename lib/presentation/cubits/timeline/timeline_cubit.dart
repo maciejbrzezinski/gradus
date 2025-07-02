@@ -175,11 +175,11 @@ class TimelineCubit extends Cubit<TimelineState> {
     return itemId;
   }
 
-  Future<String?> createItemAfterCurrent({
+  String? createItemAfterCurrent({
     required String currentItemId,
     required Day day,
     required TimelineItem timelineItem,
-  }) async {
+  }) {
     final currentState = state;
     if (currentState is! TimelineLoaded) return null;
 
@@ -382,14 +382,6 @@ class TimelineCubit extends Cubit<TimelineState> {
     if (hasChanges) {
       emit(currentState.copyWith(items: currentItems));
     }
-  }
-
-  bool _listEquals<T>(List<T> a, List<T> b) {
-    if (a.length != b.length) return false;
-    for (int i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
   }
 
   void _saveInBackground(Future<void> Function() operation) {
