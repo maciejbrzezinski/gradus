@@ -87,6 +87,11 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
   void onFocusLost() {
     _debounceTimer?.cancel();
 
+    // Don't process focus loss if user is interacting with overlay
+    if (_controller.isInteractingWithOverlay) {
+      return;
+    }
+
     // Skip regular text change processing if we're creating a new item
     if (!_isCreatingNewItem) {
       // Save changes immediately on focus loss instead of debounced save
@@ -100,17 +105,7 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
     }
 
     setEditingState(false);
-
-    // If user is interacting with overlay, delay removal to allow selection
-    if (_controller.isInteractingWithOverlay) {
-      Timer(const Duration(milliseconds: 100), () {
-        if (!_controller.isInteractingWithOverlay) {
-          _controller.typeSelectorService.hideTypeSelector();
-        }
-      });
-    } else {
-      _controller.typeSelectorService.hideTypeSelector();
-    }
+    _controller.typeSelectorService.hideTypeSelector();
   }
 
   /// Handle regular text changes (non-command text)

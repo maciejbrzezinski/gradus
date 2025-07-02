@@ -26,7 +26,6 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
   String _originalContent = '';
   String _currentContent = '';
   bool _isHovering = false;
-  bool _hasUnsavedChanges = false;
 
   @override
   void initState() {
@@ -34,19 +33,13 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
     _originalContent = widget.note.content;
     _currentContent = widget.note.content;
     setupSmartTextController(initialText: _originalContent);
-
-    if (context.read<FocusCubit>().isFocused(widget.note.id)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _startEditing();
-      });
-    }
   }
 
   @override
   void didUpdateWidget(NoteCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Only update content from stream if we don't have unsaved changes and we're not currently editing
-    if (widget.note.content != oldWidget.note.content && !_hasUnsavedChanges && !isEditing) {
+    // Only update content from stream if we're not currently editing
+    if (widget.note.content != oldWidget.note.content && !isEditing) {
       _currentContent = widget.note.content;
       _originalContent = widget.note.content;
     }
@@ -136,7 +129,6 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
     if (mounted) {
       setState(() {
         _currentContent = trimmedContent;
-        _hasUnsavedChanges = false;
       });
     }
     
@@ -149,24 +141,6 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
       context.read<TimelineCubit>().updateTimelineItem(TimelineItem.note(updatedNote));
       _originalContent = trimmedContent;
     }
-  }
-
-  @override
-  void onRegularTextChange(String text) {
-    // Mark as having unsaved changes when text changes during editing
-    if (isEditing && text.trim() != _originalContent) {
-      setState(() {
-        _hasUnsavedChanges = true;
-      });
-    }
-    
-    // Call parent implementation for debounced save
-    super.onRegularTextChange(text);
-  }
-
-  void _startEditing() {
-    onFocusGained(widget.note.id);
-    startEditingMode(initialText: widget.note.content);
   }
 
   @override
@@ -183,11 +157,12 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
       builder: (context, focusedItemId) {
         final shouldFocus = focusedItemId == widget.note.id;
 
-        // Auto-focus if this item should have focus but isn't editing yet
+        // Start editing if this item should have focus but isn't editing yet
         if (shouldFocus && !isEditing) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
-              _startEditing();
+              onFocusGained(widget.note.id);
+              startEditingMode(initialText: widget.note.content);
             }
           });
         }
@@ -220,7 +195,10 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
         curve: Curves.easeInOut,
         transform: _isHovering ? (Matrix4.identity()..scale(1.02)) : Matrix4.identity(),
         child: InkWell(
-          onTap: _startEditing,
+          onTap: () {
+            onFocusGained(widget.note.id);
+            startEditingMode(initialText: widget.note.content);
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing24, vertical: AppTheme.spacing4),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_buildNoteContent(context)]),

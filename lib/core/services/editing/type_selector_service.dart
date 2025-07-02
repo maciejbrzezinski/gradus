@@ -22,19 +22,29 @@ class TypeSelectorService {
 
     _overlayEntry = OverlayEntry(
       builder: (context) => Positioned.fill(
-        child: Material(
-          color: Colors.black.withValues(alpha: 0.3),
-          child: ItemTypeSelectorModal(
-            onTypeSelected: (option) {
-              _isInteractingWithOverlay = false;
-              hideTypeSelector();
-              onTypeSelected(option);
-            },
-            onDismiss: () {
-              _isInteractingWithOverlay = false;
-              hideTypeSelector();
-              onDismiss?.call();
-            },
+        child: GestureDetector(
+          onTap: () {
+            _isInteractingWithOverlay = false;
+            hideTypeSelector();
+            onDismiss?.call();
+          },
+          child: Material(
+            color: Colors.black.withValues(alpha: 0.3),
+            child: GestureDetector(
+              onTap: () {}, // Prevent tap from bubbling up
+              child: ItemTypeSelectorModal(
+                onTypeSelected: (option) {
+                  _isInteractingWithOverlay = false;
+                  hideTypeSelector();
+                  onTypeSelected(option);
+                },
+                onDismiss: () {
+                  _isInteractingWithOverlay = false;
+                  hideTypeSelector();
+                  onDismiss?.call();
+                },
+              ),
+            ),
           ),
         ),
       ),

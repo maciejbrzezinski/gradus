@@ -41,7 +41,10 @@ class TextInputService {
 
     // Check for slash command first
     if (CommandDetector.isSlashCommand(text)) {
+      // Set processing flag to prevent interference
+      _isProcessingCommand = true;
       onSlashCommand?.call();
+      // Don't reset the flag here - let the command handling reset it
       return;
     }
 
