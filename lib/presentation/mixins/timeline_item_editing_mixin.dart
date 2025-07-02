@@ -4,11 +4,11 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'package:gradus/presentation/cubits/timeline/timeline_state.dart';
 import '../../core/services/editing/timeline_item_editing_controller.dart';
 import '../../core/utils/text_commands.dart';
 import '../cubits/focus/focus_cubit.dart';
 import '../cubits/timeline/timeline_cubit.dart';
+import '../cubits/timeline/timeline_state.dart';
 
 /// Simplified mixin that coordinates all editing functionality through services
 mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
@@ -253,9 +253,7 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
     final currentState = context.read<TimelineCubit>().state;
     if (currentState is TimelineLoaded) {
       final focusCubit = context.read<FocusCubit>();
-      final days = currentState.selectedProject != null 
-          ? currentState.getDaysForProject(currentState.selectedProject!.id)
-          : currentState.days;
+      final days = currentState.days;
       final previousItemId = _controller.navigationService.findPreviousItemId(
         getCurrentItemId(), 
         days,
@@ -275,9 +273,7 @@ mixin TimelineItemEditingMixin<T extends StatefulWidget> on State<T> {
     final currentState = context.read<TimelineCubit>().state;
     if (currentState is TimelineLoaded) {
       final focusCubit = context.read<FocusCubit>();
-      final days = currentState.selectedProject != null 
-          ? currentState.getDaysForProject(currentState.selectedProject!.id)
-          : currentState.days;
+      final days = currentState.days;
       final nextItemId = _controller.navigationService.findNextItemId(
         getCurrentItemId(), 
         days,

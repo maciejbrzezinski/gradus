@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../cubits/timeline/projects/projects_cubit.dart';
+import '../../cubits/timeline/projects/projects_state.dart';
 import '../../cubits/timeline/timeline_cubit.dart';
 import '../../cubits/timeline/timeline_state.dart';
 import '../../widgets/timeline/timeline_view.dart';
@@ -14,8 +16,34 @@ class TimelinePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => getIt<TimelineCubit>(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => getIt<ProjectsCubit>()),
+        BlocProvider(create: (context) => getIt<TimelineCubit>()),
+      ],
+      child: _TimelinePageContent(),
+    );
+  }
+}
+
+class _TimelinePageContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<ProjectsCubit, ProjectsState>(
+      listener: (context, state) {
+        if (state is ProjectsLoaded && state.selectedProject != null) {
+          final timelineState = context.read<TimelineCubit>().state;
+          final dateRange = timelineState is TimelineLoaded 
+            ? (timelineState.startDate, timelineState.endDate)
+            : (DateTime.now().subtract(const Duration(days: 7)), DateTime.now().add(const Duration(days: 7)));
+          
+          context.read<TimelineCubit>().loadTimelineForProject(
+            state.selectedProject!.id,
+            dateRange.$1,
+            dateRange.$2,
+          );
+        }
+      },
       child: Scaffold(
         backgroundColor: AppTheme.backgroundLight,
         body: SafeArea(
@@ -25,20 +53,33 @@ class TimelinePage extends StatelessWidget {
               const SizedBox(height: AppTheme.spacing16),
               Expanded(
                 child: BlocBuilder<TimelineCubit, TimelineState>(
-                  builder: (context, state) {
-                    return state.when(
-                      initial: () => _buildLoadingState(),
-                      loading: () => _buildLoadingState(),
-                      loaded: (selectedProject, availableProjects, days, items, startDate, endDate) {
-                        return TimelineView(
-                          days: selectedProject != null ? state.getDaysForProject(selectedProject.id) : [],
-                          selectedProject: selectedProject,
-                          onLoadMoreDays: (loadPrevious) {
-                            context.read<TimelineCubit>().loadMoreDays(loadPrevious: loadPrevious);
-                          },
-                        );
+                  builder: (context, timelineState) {
+                    return BlocBuilder<ProjectsCubit, ProjectsState>(
+                      builder: (context, projectsState) {
+                        if (timelineState is TimelineLoading || projectsState is ProjectsLoading) {
+                          return _buildLoadingState();
+                        }
+                        
+                        if (timelineState is TimelineError) {
+                          return _buildErrorState(context, timelineState.failure);
+                        }
+                        
+                        if (projectsState is ProjectsError) {
+                          return _buildErrorState(context, projectsState.failure);
+                        }
+                        
+                        if (timelineState is TimelineLoaded && projectsState is ProjectsLoaded) {
+                          return TimelineView(
+                            days: timelineState.days,
+                            selectedProject: projectsState.selectedProject,
+                            onLoadMoreDays: (loadPrevious) {
+                              context.read<TimelineCubit>().loadMoreDays(loadPrevious: loadPrevious);
+                            },
+                          );
+                        }
+                        
+                        return _buildLoadingState();
                       },
-                      error: (failure) => _buildErrorState(context, failure),
                     );
                   },
                 ),
@@ -105,7 +146,7 @@ class TimelinePage extends StatelessWidget {
               text: 'Try Again',
               isFullWidth: true,
               onPressed: () {
-                context.read<TimelineCubit>().loadInitialData();
+                context.read<ProjectsCubit>().loadProjects();
               },
             ),
           ],

@@ -30,7 +30,11 @@ class _TimelineItemWidgetState extends State<TimelineItemWidget> {
           return _buildLoadingWidget();
         }
 
-        final item = state.getItemById(widget.itemId);
+        final item = state.items.cast<TimelineItem?>().firstWhere(
+          (item) => item?.id == widget.itemId,
+          orElse: () => null,
+        );
+        
         if (item == null) {
           // Item not yet loaded, show minimal loading
           return _buildLoadingWidget();

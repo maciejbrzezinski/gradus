@@ -16,4 +16,9 @@ extension TimelineItemExtension on TimelineItem {
     task: (task) => task.id,
     note: (note) => note.id,
   );
+  
+  DateTime get updatedAt => when(
+    task: (task) => task.updatedAt,
+    note: (note) => note.updatedAt,
+  );
 }

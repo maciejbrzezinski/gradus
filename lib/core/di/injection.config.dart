@@ -68,6 +68,8 @@ import 'package:gradus/domain/usecases/timeline_items/watch_timeline_items_useca
     as _i239;
 import 'package:gradus/presentation/cubits/auth/auth_cubit.dart' as _i858;
 import 'package:gradus/presentation/cubits/focus/focus_cubit.dart' as _i837;
+import 'package:gradus/presentation/cubits/timeline/projects/projects_cubit.dart'
+    as _i863;
 import 'package:gradus/presentation/cubits/timeline/timeline_cubit.dart'
     as _i293;
 import 'package:injectable/injectable.dart' as _i526;
@@ -163,6 +165,13 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i755.DaysRepository>(),
       ),
     );
+    gh.factory<_i863.ProjectsCubit>(
+      () => _i863.ProjectsCubit(
+        gh<_i903.GetProjectsUseCase>(),
+        gh<_i68.WatchProjectsUseCase>(),
+        gh<_i654.GetProjectByIdUseCase>(),
+      ),
+    );
     gh.factory<_i431.DeleteTimelineItemUseCase>(
       () =>
           _i431.DeleteTimelineItemUseCase(gh<_i348.TimelineItemsRepository>()),
@@ -204,9 +213,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i468.AddItemToDayUseCase>(),
         gh<_i811.RemoveItemFromDayUseCase>(),
         gh<_i913.MoveItemBetweenDaysUseCase>(),
-        gh<_i903.GetProjectsUseCase>(),
-        gh<_i68.WatchProjectsUseCase>(),
-        gh<_i654.GetProjectByIdUseCase>(),
         gh<_i407.GetTimelineItemsUseCase>(),
         gh<_i239.WatchTimelineItemsUseCase>(),
         gh<_i939.CreateTimelineItemUseCase>(),

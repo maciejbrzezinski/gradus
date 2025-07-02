@@ -118,14 +118,11 @@ class TimelineItemsDataSource {
     final itemType = item.when(task: (_) => 'task', note: (_) => 'note');
     _logger.i('➕ [TimelineItemsDataSource] createTimelineItem - id: ${item.id}, type: $itemType');
 
-    // 1. Immediately add to stream for instant UI update
-    _itemsController.add(item);
-    _logger.d('⚡ [TimelineItemsDataSource] Added item to stream instantly: ${item.id}');
-
     try {
       // 2. Save to Firestore in background
       final data = _mapTimelineItemToData(item);
       await _timelineItemsCollection.doc(item.id).set(data);
+      _itemsController.add(item);
 
       _logger.i('✅ [TimelineItemsDataSource] createTimelineItem - successfully created item: ${item.id}');
     } catch (e) {
@@ -138,10 +135,6 @@ class TimelineItemsDataSource {
     final itemType = item.when(task: (_) => 'task', note: (_) => 'note');
     _logger.i('✏️ [TimelineItemsDataSource] updateTimelineItem - id: ${item.id}, type: $itemType');
 
-    // 1. Immediately add to stream for instant UI update
-    _itemsController.add(item);
-    _logger.d('⚡ [TimelineItemsDataSource] Updated item in stream instantly: ${item.id}');
-
     try {
       // 2. Check if item exists and update in Firestore
       final doc = await _timelineItemsCollection.doc(item.id).get();
@@ -152,6 +145,7 @@ class TimelineItemsDataSource {
 
       final data = _mapTimelineItemToData(item);
       await _timelineItemsCollection.doc(item.id).update(data);
+      _itemsController.add(item);
 
       _logger.i('✅ [TimelineItemsDataSource] updateTimelineItem - successfully updated item: ${item.id}');
     } catch (e) {

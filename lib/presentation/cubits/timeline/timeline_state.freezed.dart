@@ -22,12 +22,11 @@ mixin _$TimelineState {
     required TResult Function() initial,
     required TResult Function() loading,
     required TResult Function(
-      Project? selectedProject,
-      List<Project> availableProjects,
       List<Day> days,
       List<TimelineItem> items,
       DateTime startDate,
       DateTime endDate,
+      String? currentProjectId,
     )
     loaded,
     required TResult Function(Failure failure) error,
@@ -37,12 +36,11 @@ mixin _$TimelineState {
     TResult? Function()? initial,
     TResult? Function()? loading,
     TResult? Function(
-      Project? selectedProject,
-      List<Project> availableProjects,
       List<Day> days,
       List<TimelineItem> items,
       DateTime startDate,
       DateTime endDate,
+      String? currentProjectId,
     )?
     loaded,
     TResult? Function(Failure failure)? error,
@@ -52,12 +50,11 @@ mixin _$TimelineState {
     TResult Function()? initial,
     TResult Function()? loading,
     TResult Function(
-      Project? selectedProject,
-      List<Project> availableProjects,
       List<Day> days,
       List<TimelineItem> items,
       DateTime startDate,
       DateTime endDate,
+      String? currentProjectId,
     )?
     loaded,
     TResult Function(Failure failure)? error,
@@ -155,12 +152,11 @@ class _$TimelineInitialImpl implements TimelineInitial {
     required TResult Function() initial,
     required TResult Function() loading,
     required TResult Function(
-      Project? selectedProject,
-      List<Project> availableProjects,
       List<Day> days,
       List<TimelineItem> items,
       DateTime startDate,
       DateTime endDate,
+      String? currentProjectId,
     )
     loaded,
     required TResult Function(Failure failure) error,
@@ -174,12 +170,11 @@ class _$TimelineInitialImpl implements TimelineInitial {
     TResult? Function()? initial,
     TResult? Function()? loading,
     TResult? Function(
-      Project? selectedProject,
-      List<Project> availableProjects,
       List<Day> days,
       List<TimelineItem> items,
       DateTime startDate,
       DateTime endDate,
+      String? currentProjectId,
     )?
     loaded,
     TResult? Function(Failure failure)? error,
@@ -193,12 +188,11 @@ class _$TimelineInitialImpl implements TimelineInitial {
     TResult Function()? initial,
     TResult Function()? loading,
     TResult Function(
-      Project? selectedProject,
-      List<Project> availableProjects,
       List<Day> days,
       List<TimelineItem> items,
       DateTime startDate,
       DateTime endDate,
+      String? currentProjectId,
     )?
     loaded,
     TResult Function(Failure failure)? error,
@@ -298,12 +292,11 @@ class _$TimelineLoadingImpl implements TimelineLoading {
     required TResult Function() initial,
     required TResult Function() loading,
     required TResult Function(
-      Project? selectedProject,
-      List<Project> availableProjects,
       List<Day> days,
       List<TimelineItem> items,
       DateTime startDate,
       DateTime endDate,
+      String? currentProjectId,
     )
     loaded,
     required TResult Function(Failure failure) error,
@@ -317,12 +310,11 @@ class _$TimelineLoadingImpl implements TimelineLoading {
     TResult? Function()? initial,
     TResult? Function()? loading,
     TResult? Function(
-      Project? selectedProject,
-      List<Project> availableProjects,
       List<Day> days,
       List<TimelineItem> items,
       DateTime startDate,
       DateTime endDate,
+      String? currentProjectId,
     )?
     loaded,
     TResult? Function(Failure failure)? error,
@@ -336,12 +328,11 @@ class _$TimelineLoadingImpl implements TimelineLoading {
     TResult Function()? initial,
     TResult Function()? loading,
     TResult Function(
-      Project? selectedProject,
-      List<Project> availableProjects,
       List<Day> days,
       List<TimelineItem> items,
       DateTime startDate,
       DateTime endDate,
+      String? currentProjectId,
     )?
     loaded,
     TResult Function(Failure failure)? error,
@@ -403,15 +394,12 @@ abstract class _$$TimelineLoadedImplCopyWith<$Res> {
   ) = __$$TimelineLoadedImplCopyWithImpl<$Res>;
   @useResult
   $Res call({
-    Project? selectedProject,
-    List<Project> availableProjects,
     List<Day> days,
     List<TimelineItem> items,
     DateTime startDate,
     DateTime endDate,
+    String? currentProjectId,
   });
-
-  $ProjectCopyWith<$Res>? get selectedProject;
 }
 
 /// @nodoc
@@ -428,23 +416,14 @@ class __$$TimelineLoadedImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? selectedProject = freezed,
-    Object? availableProjects = null,
     Object? days = null,
     Object? items = null,
     Object? startDate = null,
     Object? endDate = null,
+    Object? currentProjectId = freezed,
   }) {
     return _then(
       _$TimelineLoadedImpl(
-        selectedProject: freezed == selectedProject
-            ? _value.selectedProject
-            : selectedProject // ignore: cast_nullable_to_non_nullable
-                  as Project?,
-        availableProjects: null == availableProjects
-            ? _value._availableProjects
-            : availableProjects // ignore: cast_nullable_to_non_nullable
-                  as List<Project>,
         days: null == days
             ? _value._days
             : days // ignore: cast_nullable_to_non_nullable
@@ -461,22 +440,12 @@ class __$$TimelineLoadedImplCopyWithImpl<$Res>
             ? _value.endDate
             : endDate // ignore: cast_nullable_to_non_nullable
                   as DateTime,
+        currentProjectId: freezed == currentProjectId
+            ? _value.currentProjectId
+            : currentProjectId // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
-  }
-
-  /// Create a copy of TimelineState
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $ProjectCopyWith<$Res>? get selectedProject {
-    if (_value.selectedProject == null) {
-      return null;
-    }
-
-    return $ProjectCopyWith<$Res>(_value.selectedProject!, (value) {
-      return _then(_value.copyWith(selectedProject: value));
-    });
   }
 }
 
@@ -484,26 +453,13 @@ class __$$TimelineLoadedImplCopyWithImpl<$Res>
 
 class _$TimelineLoadedImpl implements TimelineLoaded {
   const _$TimelineLoadedImpl({
-    required this.selectedProject,
-    required final List<Project> availableProjects,
     required final List<Day> days,
     required final List<TimelineItem> items,
     required this.startDate,
     required this.endDate,
-  }) : _availableProjects = availableProjects,
-       _days = days,
+    required this.currentProjectId,
+  }) : _days = days,
        _items = items;
-
-  @override
-  final Project? selectedProject;
-  final List<Project> _availableProjects;
-  @override
-  List<Project> get availableProjects {
-    if (_availableProjects is EqualUnmodifiableListView)
-      return _availableProjects;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_availableProjects);
-  }
 
   final List<Day> _days;
   @override
@@ -525,10 +481,12 @@ class _$TimelineLoadedImpl implements TimelineLoaded {
   final DateTime startDate;
   @override
   final DateTime endDate;
+  @override
+  final String? currentProjectId;
 
   @override
   String toString() {
-    return 'TimelineState.loaded(selectedProject: $selectedProject, availableProjects: $availableProjects, days: $days, items: $items, startDate: $startDate, endDate: $endDate)';
+    return 'TimelineState.loaded(days: $days, items: $items, startDate: $startDate, endDate: $endDate, currentProjectId: $currentProjectId)';
   }
 
   @override
@@ -536,28 +494,23 @@ class _$TimelineLoadedImpl implements TimelineLoaded {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$TimelineLoadedImpl &&
-            (identical(other.selectedProject, selectedProject) ||
-                other.selectedProject == selectedProject) &&
-            const DeepCollectionEquality().equals(
-              other._availableProjects,
-              _availableProjects,
-            ) &&
             const DeepCollectionEquality().equals(other._days, _days) &&
             const DeepCollectionEquality().equals(other._items, _items) &&
             (identical(other.startDate, startDate) ||
                 other.startDate == startDate) &&
-            (identical(other.endDate, endDate) || other.endDate == endDate));
+            (identical(other.endDate, endDate) || other.endDate == endDate) &&
+            (identical(other.currentProjectId, currentProjectId) ||
+                other.currentProjectId == currentProjectId));
   }
 
   @override
   int get hashCode => Object.hash(
     runtimeType,
-    selectedProject,
-    const DeepCollectionEquality().hash(_availableProjects),
     const DeepCollectionEquality().hash(_days),
     const DeepCollectionEquality().hash(_items),
     startDate,
     endDate,
+    currentProjectId,
   );
 
   /// Create a copy of TimelineState
@@ -577,24 +530,16 @@ class _$TimelineLoadedImpl implements TimelineLoaded {
     required TResult Function() initial,
     required TResult Function() loading,
     required TResult Function(
-      Project? selectedProject,
-      List<Project> availableProjects,
       List<Day> days,
       List<TimelineItem> items,
       DateTime startDate,
       DateTime endDate,
+      String? currentProjectId,
     )
     loaded,
     required TResult Function(Failure failure) error,
   }) {
-    return loaded(
-      selectedProject,
-      availableProjects,
-      days,
-      items,
-      startDate,
-      endDate,
-    );
+    return loaded(days, items, startDate, endDate, currentProjectId);
   }
 
   @override
@@ -603,24 +548,16 @@ class _$TimelineLoadedImpl implements TimelineLoaded {
     TResult? Function()? initial,
     TResult? Function()? loading,
     TResult? Function(
-      Project? selectedProject,
-      List<Project> availableProjects,
       List<Day> days,
       List<TimelineItem> items,
       DateTime startDate,
       DateTime endDate,
+      String? currentProjectId,
     )?
     loaded,
     TResult? Function(Failure failure)? error,
   }) {
-    return loaded?.call(
-      selectedProject,
-      availableProjects,
-      days,
-      items,
-      startDate,
-      endDate,
-    );
+    return loaded?.call(days, items, startDate, endDate, currentProjectId);
   }
 
   @override
@@ -629,26 +566,18 @@ class _$TimelineLoadedImpl implements TimelineLoaded {
     TResult Function()? initial,
     TResult Function()? loading,
     TResult Function(
-      Project? selectedProject,
-      List<Project> availableProjects,
       List<Day> days,
       List<TimelineItem> items,
       DateTime startDate,
       DateTime endDate,
+      String? currentProjectId,
     )?
     loaded,
     TResult Function(Failure failure)? error,
     required TResult orElse(),
   }) {
     if (loaded != null) {
-      return loaded(
-        selectedProject,
-        availableProjects,
-        days,
-        items,
-        startDate,
-        endDate,
-      );
+      return loaded(days, items, startDate, endDate, currentProjectId);
     }
     return orElse();
   }
@@ -693,20 +622,18 @@ class _$TimelineLoadedImpl implements TimelineLoaded {
 
 abstract class TimelineLoaded implements TimelineState {
   const factory TimelineLoaded({
-    required final Project? selectedProject,
-    required final List<Project> availableProjects,
     required final List<Day> days,
     required final List<TimelineItem> items,
     required final DateTime startDate,
     required final DateTime endDate,
+    required final String? currentProjectId,
   }) = _$TimelineLoadedImpl;
 
-  Project? get selectedProject;
-  List<Project> get availableProjects;
   List<Day> get days;
   List<TimelineItem> get items;
   DateTime get startDate;
   DateTime get endDate;
+  String? get currentProjectId;
 
   /// Create a copy of TimelineState
   /// with the given fields replaced by the non-null parameter values.
@@ -800,12 +727,11 @@ class _$TimelineErrorImpl implements TimelineError {
     required TResult Function() initial,
     required TResult Function() loading,
     required TResult Function(
-      Project? selectedProject,
-      List<Project> availableProjects,
       List<Day> days,
       List<TimelineItem> items,
       DateTime startDate,
       DateTime endDate,
+      String? currentProjectId,
     )
     loaded,
     required TResult Function(Failure failure) error,
@@ -819,12 +745,11 @@ class _$TimelineErrorImpl implements TimelineError {
     TResult? Function()? initial,
     TResult? Function()? loading,
     TResult? Function(
-      Project? selectedProject,
-      List<Project> availableProjects,
       List<Day> days,
       List<TimelineItem> items,
       DateTime startDate,
       DateTime endDate,
+      String? currentProjectId,
     )?
     loaded,
     TResult? Function(Failure failure)? error,
@@ -838,12 +763,11 @@ class _$TimelineErrorImpl implements TimelineError {
     TResult Function()? initial,
     TResult Function()? loading,
     TResult Function(
-      Project? selectedProject,
-      List<Project> availableProjects,
       List<Day> days,
       List<TimelineItem> items,
       DateTime startDate,
       DateTime endDate,
+      String? currentProjectId,
     )?
     loaded,
     TResult Function(Failure failure)? error,

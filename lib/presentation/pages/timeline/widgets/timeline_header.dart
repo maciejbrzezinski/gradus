@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gradus/core/theme/app_theme.dart';
 
-import '../../../cubits/timeline/timeline_cubit.dart';
-import '../../../cubits/timeline/timeline_state.dart';
+import '../../../cubits/timeline/projects/projects_cubit.dart';
+import '../../../cubits/timeline/projects/projects_state.dart';
 import '../../../widgets/shared/animated_project_tabs.dart';
 
 class TimelineHeader extends StatelessWidget {
@@ -40,7 +40,7 @@ class TimelineHeader extends StatelessWidget {
             ),
             const Spacer(),
             // Animated project tabs
-            BlocBuilder<TimelineCubit, TimelineState>(
+            BlocBuilder<ProjectsCubit, ProjectsState>(
               builder: (context, state) {
                 return state.when(
                   initial: () => const SizedBox.shrink(),
@@ -49,12 +49,12 @@ class TimelineHeader extends StatelessWidget {
                     height: AppTheme.spacing20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  loaded: (selectedProject, availableProjects, _, __, ___, ____) {
+                  loaded: (selectedProject, availableProjects) {
                     return AnimatedProjectTabs(
                       selectedProject: selectedProject,
                       availableProjects: availableProjects,
                       onProjectChanged: (projectId) {
-                        context.read<TimelineCubit>().switchProject(projectId);
+                        context.read<ProjectsCubit>().switchProject(projectId);
                       },
                     );
                   },
