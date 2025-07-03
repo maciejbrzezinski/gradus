@@ -7,6 +7,7 @@ import '../../domain/entities/timeline_item.dart';
 import '../../domain/entities/task.dart';
 import '../../domain/entities/note.dart';
 import '../../domain/entities/note_type.dart';
+import '../../domain/entities/recurrence_rule.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/logger_service.dart';
 
@@ -197,6 +198,9 @@ class TimelineItemsDataSource {
           title: data['title'],
           isCompleted: data['isCompleted'] ?? false,
           description: data['description'],
+          recurrence: data['recurrence'] != null 
+              ? RecurrenceRule.fromJson(data['recurrence'] as Map<String, dynamic>)
+              : null,
         );
         return TimelineItem.task(task);
       case 'note':
@@ -228,6 +232,7 @@ class TimelineItemsDataSource {
         'title': task.title,
         'isCompleted': task.isCompleted,
         'description': task.description,
+        'recurrence': task.recurrence?.toJson(),
       },
       note: (note) => {
         'id': note.id,

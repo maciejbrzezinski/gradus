@@ -151,6 +151,6 @@ class CompleteRecurringTaskUseCase {
   }
 
   String _generateTaskId() {
-    return DateTime.now().millisecondsSinceEpoch.toString();
+    return 'task_${DateTime.now().millisecondsSinceEpoch}';
   }
 }
