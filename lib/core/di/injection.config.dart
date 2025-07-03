@@ -80,10 +80,10 @@ extension GetItInjectableX on _i174.GetIt {
   }) {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final firebaseModule = _$FirebaseModule();
-    gh.factory<_i837.FocusCubit>(() => _i837.FocusCubit());
     gh.factory<_i431.NavigationService>(() => _i431.NavigationService());
     gh.factory<_i583.TextInputService>(() => _i583.TextInputService());
     gh.factory<_i87.TypeSelectorService>(() => _i87.TypeSelectorService());
+    gh.factory<_i837.FocusCubit>(() => _i837.FocusCubit());
     gh.lazySingleton<_i59.FirebaseAuth>(() => firebaseModule.firebaseAuth);
     gh.lazySingleton<_i974.FirebaseFirestore>(
       () => firebaseModule.firebaseFirestore,
@@ -170,6 +170,10 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i654.GetProjectByIdUseCase>(),
       ),
     );
+    gh.factory<_i239.WatchTimelineItemsUseCase>(
+      () =>
+          _i239.WatchTimelineItemsUseCase(gh<_i348.TimelineItemsRepository>()),
+    );
     gh.factory<_i431.DeleteTimelineItemUseCase>(
       () =>
           _i431.DeleteTimelineItemUseCase(gh<_i348.TimelineItemsRepository>()),
@@ -184,10 +188,6 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i172.GetTimelineItemUseCase>(
       () => _i172.GetTimelineItemUseCase(gh<_i348.TimelineItemsRepository>()),
-    );
-    gh.factory<_i239.WatchTimelineItemsUseCase>(
-      () =>
-          _i239.WatchTimelineItemsUseCase(gh<_i348.TimelineItemsRepository>()),
     );
     gh.factory<_i407.GetTimelineItemsUseCase>(
       () => _i407.GetTimelineItemsUseCase(gh<_i348.TimelineItemsRepository>()),

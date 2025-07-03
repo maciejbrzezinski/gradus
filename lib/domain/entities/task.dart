@@ -1,20 +1,24 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'item_type.dart';
 import 'recurrence_rule.dart';
 
 part 'task.freezed.dart';
 part 'task.g.dart';
 
 @freezed
-abstract class Task with _$Task {
-  const factory Task({
+class Task with _$Task {
+  factory Task({
     required String id,
+    @Default(ItemType.task) ItemType type,
     required DateTime createdAt,
     required DateTime updatedAt,
     required String title,
     @Default(false) bool isCompleted,
     String? description,
     RecurrenceRule? recurrence,
+    String? nextRecurringTaskId,
+    String? previousRecurringTaskId,
   }) = _Task;
 
   factory Task.create({
@@ -22,6 +26,8 @@ abstract class Task with _$Task {
     bool isCompleted = false,
     String? description,
     RecurrenceRule? recurrence,
+    String? nextRecurringTaskId,
+    String? previousRecurringTaskId,
   }) {
     final now = DateTime.now();
     return Task(
@@ -32,8 +38,11 @@ abstract class Task with _$Task {
       isCompleted: isCompleted,
       description: description,
       recurrence: recurrence,
+      nextRecurringTaskId: nextRecurringTaskId,
+      previousRecurringTaskId: previousRecurringTaskId,
     );
   }
 
   factory Task.fromJson(Map<String, dynamic> json) => _$TaskFromJson(json);
 }
+

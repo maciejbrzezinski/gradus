@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gradus/domain/entities/item_type.dart';
 import 'package:gradus/domain/entities/timeline_item.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -25,7 +26,6 @@ class TaskCard extends StatefulWidget {
 
 class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
   String _originalTitle = '';
-  String _currentTitle = '';
   bool _hasUnsavedChanges = false;
   final GlobalKey calendarIconKey = GlobalKey();
   bool _isHovered = false;
@@ -34,7 +34,6 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
   void initState() {
     super.initState();
     _originalTitle = widget.task.title;
-    _currentTitle = widget.task.title;
     setupSmartTextController(initialText: _originalTitle);
 
     // Auto-enter edit mode if title is empty (newly created item)
@@ -53,7 +52,6 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
     super.didUpdateWidget(oldWidget);
     // Only update title from stream if we don't have unsaved changes and we're not currently editing
     if (widget.task.title != oldWidget.task.title && !_hasUnsavedChanges && !isEditing) {
-      _currentTitle = widget.task.title;
       _originalTitle = widget.task.title;
     }
   }
@@ -66,7 +64,7 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
       // Update task title - create updated task
       final task = widget.task.copyWith(title: newContent, updatedAt: DateTime.now());
       await timelineCubit.updateTimelineItem(TimelineItem.task(task));
-    } else if (newType.isHeadline || newType == ItemType.textNote) {
+    } else if (newType.isHeadline || newType == ItemType.text) {
       // Transform task to note - create note with same ID
       final note = Note(
         id: widget.task.id,
@@ -74,7 +72,7 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
         // Keep original timestamps
         updatedAt: DateTime.now(),
         content: newContent,
-        type: newType.toNoteType(),
+        noteType: newType.toNoteType(),
       );
       await timelineCubit.updateTimelineItem(TimelineItem.note(note));
     }
@@ -139,7 +137,6 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
     // Always update local state first
     if (mounted) {
       setState(() {
-        _currentTitle = trimmedTitle;
         _hasUnsavedChanges = false;
       });
     }
@@ -340,9 +337,6 @@ class _TaskCardState extends State<TaskCard> with TimelineItemEditingMixin {
             onRecurrenceChanged: (newRecurrence) {
               Navigator.of(context).pop();
               _updateTaskRecurrence(newRecurrence);
-            },
-            onDismiss: () {
-              Navigator.of(context).pop();
             },
           ),
         ),

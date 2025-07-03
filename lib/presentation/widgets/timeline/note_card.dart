@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gradus/core/utils/text_commands.dart';
 import 'package:gradus/domain/entities/day.dart';
 import 'package:gradus/domain/entities/timeline_item.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../domain/entities/item_type.dart';
 import '../../../domain/entities/note.dart';
 import '../../../domain/entities/task.dart';
 import '../../../domain/entities/note_type.dart';
-import '../../../core/utils/text_commands.dart';
 import '../../cubits/timeline/timeline_cubit.dart';
 import '../../cubits/focus/focus_cubit.dart';
 import '../shared/timeline_item_editing_mixin.dart';
@@ -60,9 +61,9 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
         isCompleted: false,
       );
       await timelineCubit.updateTimelineItem(TimelineItem.task(task));
-    } else if (newType.isHeadline || newType == ItemType.textNote) {
+    } else if (newType.isHeadline || newType == ItemType.text) {
       // Transform note type - create note with new type
-      final note = widget.note.copyWith(content: newContent, type: newType.toNoteType(), updatedAt: DateTime.now());
+      final note = widget.note.copyWith(content: newContent, noteType: newType.toNoteType(), updatedAt: DateTime.now());
       await timelineCubit.updateTimelineItem(TimelineItem.note(note));
     }
 
@@ -89,7 +90,7 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
       // Create new note entity
       final note = Note.create(
         content: '',
-        type: widget.note.type, // Same type as current note
+        noteType: widget.note.noteType, // Same type as current note
       );
       final timelineItem = TimelineItem.note(note);
 
@@ -124,20 +125,17 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
   @override
   void saveChanges(String newContent) {
     final trimmedContent = newContent.trim();
-    
+
     // Always update local state first
     if (mounted) {
       setState(() {
         _currentContent = trimmedContent;
       });
     }
-    
+
     // Only save to backend if content actually changed and is not empty
     if (trimmedContent != _originalContent && trimmedContent.isNotEmpty) {
-      final updatedNote = widget.note.copyWith(
-        content: trimmedContent,
-        updatedAt: DateTime.now(),
-      );
+      final updatedNote = widget.note.copyWith(content: trimmedContent, updatedAt: DateTime.now());
       context.read<TimelineCubit>().updateTimelineItem(TimelineItem.note(updatedNote));
       _originalContent = trimmedContent;
     }
@@ -236,7 +234,7 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
   }
 
   TextStyle? _getNoteTextStyle(BuildContext context) {
-    switch (widget.note.type) {
+    switch (widget.note.noteType) {
       case NoteType.headline1:
         return Theme.of(
           context,
@@ -257,7 +255,7 @@ class _NoteCardState extends State<NoteCard> with TimelineItemEditingMixin {
   }
 
   double _getMinHeight() {
-    switch (widget.note.type) {
+    switch (widget.note.noteType) {
       case NoteType.headline1:
         return 40.0;
       case NoteType.headline2:

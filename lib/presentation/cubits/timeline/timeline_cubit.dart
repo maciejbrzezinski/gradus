@@ -316,7 +316,7 @@ class TimelineCubit extends Cubit<TimelineState> {
     emit(currentState.copyWith(items: updatedItems));
 
     // Handle recurring task completion
-    final result = await _completeRecurringTaskUseCase(task: task, currentDay: day, isCompleted: isCompleted);
+    final result = await _completeRecurringTaskUseCase(originalTask: task, currentDay: day, isCompleted: isCompleted);
 
     result.fold((failure) {
       // Revert the optimistic update on failure
@@ -372,8 +372,10 @@ class TimelineCubit extends Cubit<TimelineState> {
       hasChanges = true;
     } else {
       // Existing item, update it
-      if (currentItems[lookupItem].updatedAt.isBefore(item.updatedAt)) {
-        currentItems[lookupItem] = item;
+      final currentItem = currentItems.firstWhere((i) => i.id == item.id);
+      if (currentItem.updatedAt.isBefore(item.updatedAt)) {
+        currentItems.removeWhere((i) => i.id == item.id);
+        currentItems.insert(lookupItem, item);
         hasChanges = true;
       }
     }

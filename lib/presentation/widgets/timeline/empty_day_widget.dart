@@ -50,7 +50,7 @@ class EmptyDayWidget extends StatelessWidget {
       // Create note entity using factory constructor
       final note = Note.create(
         content: '', // Empty content so it enters edit mode immediately
-        type: NoteType.text,
+        noteType: NoteType.text,
       );
       final timelineItem = TimelineItem.note(note);
 

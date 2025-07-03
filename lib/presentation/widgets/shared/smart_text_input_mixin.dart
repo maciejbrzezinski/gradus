@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gradus/domain/entities/item_type.dart';
 import '../../../core/utils/text_commands.dart';
 
 mixin SmartTextInputMixin<T extends StatefulWidget> on State<T> {

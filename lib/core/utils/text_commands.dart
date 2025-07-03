@@ -1,17 +1,6 @@
-import '../../../domain/entities/note_type.dart';
+import 'package:gradus/domain/entities/item_type.dart';
 
-enum ItemType {
-  textNote,
-  headline1,
-  headline2,
-  headline3,
-  task,
-  bulletPoint,
-  // Future types can be added here:
-  // numberedList,
-  // codeBlock,
-  // image,
-}
+import '../../../domain/entities/note_type.dart';
 
 extension ItemTypeExtensions on ItemType {
   bool get isHeadline => this == ItemType.headline1 || 
@@ -20,7 +9,7 @@ extension ItemTypeExtensions on ItemType {
   
   NoteType toNoteType() {
     switch (this) {
-      case ItemType.textNote:
+      case ItemType.text:
         return NoteType.text;
       case ItemType.headline1:
         return NoteType.headline1;

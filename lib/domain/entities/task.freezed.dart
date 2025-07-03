@@ -22,12 +22,15 @@ Task _$TaskFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$Task {
   String get id => throw _privateConstructorUsedError;
+  ItemType get type => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
   String get title => throw _privateConstructorUsedError;
   bool get isCompleted => throw _privateConstructorUsedError;
   String? get description => throw _privateConstructorUsedError;
   RecurrenceRule? get recurrence => throw _privateConstructorUsedError;
+  String? get nextRecurringTaskId => throw _privateConstructorUsedError;
+  String? get previousRecurringTaskId => throw _privateConstructorUsedError;
 
   /// Serializes this Task to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -45,12 +48,15 @@ abstract class $TaskCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
+    ItemType type,
     DateTime createdAt,
     DateTime updatedAt,
     String title,
     bool isCompleted,
     String? description,
     RecurrenceRule? recurrence,
+    String? nextRecurringTaskId,
+    String? previousRecurringTaskId,
   });
 
   $RecurrenceRuleCopyWith<$Res>? get recurrence;
@@ -72,12 +78,15 @@ class _$TaskCopyWithImpl<$Res, $Val extends Task>
   @override
   $Res call({
     Object? id = null,
+    Object? type = null,
     Object? createdAt = null,
     Object? updatedAt = null,
     Object? title = null,
     Object? isCompleted = null,
     Object? description = freezed,
     Object? recurrence = freezed,
+    Object? nextRecurringTaskId = freezed,
+    Object? previousRecurringTaskId = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -85,6 +94,10 @@ class _$TaskCopyWithImpl<$Res, $Val extends Task>
                 ? _value.id
                 : id // ignore: cast_nullable_to_non_nullable
                       as String,
+            type: null == type
+                ? _value.type
+                : type // ignore: cast_nullable_to_non_nullable
+                      as ItemType,
             createdAt: null == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
@@ -109,6 +122,14 @@ class _$TaskCopyWithImpl<$Res, $Val extends Task>
                 ? _value.recurrence
                 : recurrence // ignore: cast_nullable_to_non_nullable
                       as RecurrenceRule?,
+            nextRecurringTaskId: freezed == nextRecurringTaskId
+                ? _value.nextRecurringTaskId
+                : nextRecurringTaskId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            previousRecurringTaskId: freezed == previousRecurringTaskId
+                ? _value.previousRecurringTaskId
+                : previousRecurringTaskId // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -139,12 +160,15 @@ abstract class _$$TaskImplCopyWith<$Res> implements $TaskCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
+    ItemType type,
     DateTime createdAt,
     DateTime updatedAt,
     String title,
     bool isCompleted,
     String? description,
     RecurrenceRule? recurrence,
+    String? nextRecurringTaskId,
+    String? previousRecurringTaskId,
   });
 
   @override
@@ -164,12 +188,15 @@ class __$$TaskImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
+    Object? type = null,
     Object? createdAt = null,
     Object? updatedAt = null,
     Object? title = null,
     Object? isCompleted = null,
     Object? description = freezed,
     Object? recurrence = freezed,
+    Object? nextRecurringTaskId = freezed,
+    Object? previousRecurringTaskId = freezed,
   }) {
     return _then(
       _$TaskImpl(
@@ -177,6 +204,10 @@ class __$$TaskImplCopyWithImpl<$Res>
             ? _value.id
             : id // ignore: cast_nullable_to_non_nullable
                   as String,
+        type: null == type
+            ? _value.type
+            : type // ignore: cast_nullable_to_non_nullable
+                  as ItemType,
         createdAt: null == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
@@ -201,6 +232,14 @@ class __$$TaskImplCopyWithImpl<$Res>
             ? _value.recurrence
             : recurrence // ignore: cast_nullable_to_non_nullable
                   as RecurrenceRule?,
+        nextRecurringTaskId: freezed == nextRecurringTaskId
+            ? _value.nextRecurringTaskId
+            : nextRecurringTaskId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        previousRecurringTaskId: freezed == previousRecurringTaskId
+            ? _value.previousRecurringTaskId
+            : previousRecurringTaskId // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -209,14 +248,17 @@ class __$$TaskImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$TaskImpl implements _Task {
-  const _$TaskImpl({
+  _$TaskImpl({
     required this.id,
+    this.type = ItemType.task,
     required this.createdAt,
     required this.updatedAt,
     required this.title,
     this.isCompleted = false,
     this.description,
     this.recurrence,
+    this.nextRecurringTaskId,
+    this.previousRecurringTaskId,
   });
 
   factory _$TaskImpl.fromJson(Map<String, dynamic> json) =>
@@ -224,6 +266,9 @@ class _$TaskImpl implements _Task {
 
   @override
   final String id;
+  @override
+  @JsonKey()
+  final ItemType type;
   @override
   final DateTime createdAt;
   @override
@@ -237,10 +282,14 @@ class _$TaskImpl implements _Task {
   final String? description;
   @override
   final RecurrenceRule? recurrence;
+  @override
+  final String? nextRecurringTaskId;
+  @override
+  final String? previousRecurringTaskId;
 
   @override
   String toString() {
-    return 'Task(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, title: $title, isCompleted: $isCompleted, description: $description, recurrence: $recurrence)';
+    return 'Task(id: $id, type: $type, createdAt: $createdAt, updatedAt: $updatedAt, title: $title, isCompleted: $isCompleted, description: $description, recurrence: $recurrence, nextRecurringTaskId: $nextRecurringTaskId, previousRecurringTaskId: $previousRecurringTaskId)';
   }
 
   @override
@@ -249,6 +298,7 @@ class _$TaskImpl implements _Task {
         (other.runtimeType == runtimeType &&
             other is _$TaskImpl &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.type, type) || other.type == type) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -259,7 +309,14 @@ class _$TaskImpl implements _Task {
             (identical(other.description, description) ||
                 other.description == description) &&
             (identical(other.recurrence, recurrence) ||
-                other.recurrence == recurrence));
+                other.recurrence == recurrence) &&
+            (identical(other.nextRecurringTaskId, nextRecurringTaskId) ||
+                other.nextRecurringTaskId == nextRecurringTaskId) &&
+            (identical(
+                  other.previousRecurringTaskId,
+                  previousRecurringTaskId,
+                ) ||
+                other.previousRecurringTaskId == previousRecurringTaskId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -267,12 +324,15 @@ class _$TaskImpl implements _Task {
   int get hashCode => Object.hash(
     runtimeType,
     id,
+    type,
     createdAt,
     updatedAt,
     title,
     isCompleted,
     description,
     recurrence,
+    nextRecurringTaskId,
+    previousRecurringTaskId,
   );
 
   /// Create a copy of Task
@@ -290,20 +350,25 @@ class _$TaskImpl implements _Task {
 }
 
 abstract class _Task implements Task {
-  const factory _Task({
+  factory _Task({
     required final String id,
+    final ItemType type,
     required final DateTime createdAt,
     required final DateTime updatedAt,
     required final String title,
     final bool isCompleted,
     final String? description,
     final RecurrenceRule? recurrence,
+    final String? nextRecurringTaskId,
+    final String? previousRecurringTaskId,
   }) = _$TaskImpl;
 
   factory _Task.fromJson(Map<String, dynamic> json) = _$TaskImpl.fromJson;
 
   @override
   String get id;
+  @override
+  ItemType get type;
   @override
   DateTime get createdAt;
   @override
@@ -316,6 +381,10 @@ abstract class _Task implements Task {
   String? get description;
   @override
   RecurrenceRule? get recurrence;
+  @override
+  String? get nextRecurringTaskId;
+  @override
+  String? get previousRecurringTaskId;
 
   /// Create a copy of Task
   /// with the given fields replaced by the non-null parameter values.

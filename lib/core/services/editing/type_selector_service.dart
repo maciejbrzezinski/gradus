@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:gradus/domain/entities/item_type.dart';
 import 'package:injectable/injectable.dart';
 import '../../../presentation/widgets/timeline/item_type_selector_modal.dart';
-import '../../utils/text_commands.dart';
 
 /// Service responsible for managing the type selector overlay
 @injectable
@@ -64,7 +64,7 @@ class TypeSelectorService {
   ItemType itemTypeOptionToItemType(ItemTypeOption option) {
     switch (option) {
       case ItemTypeOption.text:
-        return ItemType.textNote;
+        return ItemType.text;
       case ItemTypeOption.headline1:
         return ItemType.headline1;
       case ItemTypeOption.headline2:

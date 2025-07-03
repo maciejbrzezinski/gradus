@@ -147,7 +147,7 @@ class __$$RecurrenceRuleImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$RecurrenceRuleImpl implements _RecurrenceRule {
-  const _$RecurrenceRuleImpl({
+  _$RecurrenceRuleImpl({
     required this.type,
     required this.interval,
     this.endDate,
@@ -205,7 +205,7 @@ class _$RecurrenceRuleImpl implements _RecurrenceRule {
 }
 
 abstract class _RecurrenceRule implements RecurrenceRule {
-  const factory _RecurrenceRule({
+  factory _RecurrenceRule({
     required final RecurrenceType type,
     required final int interval,
     final DateTime? endDate,

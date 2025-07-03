@@ -14,34 +14,32 @@ class CompleteRecurringTaskUseCase {
   final TimelineItemsRepository _timelineItemsRepository;
   final DaysRepository _daysRepository;
 
-  CompleteRecurringTaskUseCase(
-    this._timelineItemsRepository,
-    this._daysRepository,
-  );
+  CompleteRecurringTaskUseCase(this._timelineItemsRepository, this._daysRepository);
 
   Future<Either<Failure, Unit>> call({
-    required entities.Task task,
+    required entities.Task originalTask,
     required Day currentDay,
     required bool isCompleted,
   }) async {
     try {
       // First, update the current task completion status
-      final updatedTask = task.copyWith(isCompleted: isCompleted);
-      final updateResult = await _timelineItemsRepository.updateTimelineItem(
-        TimelineItem.task(updatedTask),
-      );
-
-      if (updateResult.isLeft()) {
-        return updateResult;
-      }
+      final task = originalTask.copyWith(isCompleted: isCompleted, updatedAt: DateTime.now());
 
       // If task is being completed and has recurrence, create next occurrence
       if (isCompleted && task.recurrence != null) {
+        // Check if next recurring task already exists
+        if (task.nextRecurringTaskId != null) {
+          // Next task already exists - do nothing
+          return const Right(unit);
+        }
+
         final nextDate = _calculateNextDate(currentDay.date, task.recurrence!);
-        
+
         // Check if we should create next occurrence
         if (_shouldCreateNextOccurrence(task.recurrence!, nextDate)) {
-          await _createNextOccurrence(task, nextDate, currentDay.projectId);
+          await _createNextOccurrenceWithLinks(task, nextDate, currentDay.projectId);
+        } else {
+          await _timelineItemsRepository.updateTimelineItem(TimelineItem.task(task));
         }
       }
 
@@ -58,17 +56,9 @@ class CompleteRecurringTaskUseCase {
       case RecurrenceType.weekly:
         return currentDate.add(Duration(days: 7 * rule.interval));
       case RecurrenceType.monthly:
-        return DateTime(
-          currentDate.year,
-          currentDate.month + rule.interval,
-          currentDate.day,
-        );
+        return DateTime(currentDate.year, currentDate.month + rule.interval, currentDate.day);
       case RecurrenceType.yearly:
-        return DateTime(
-          currentDate.year + rule.interval,
-          currentDate.month,
-          currentDate.day,
-        );
+        return DateTime(currentDate.year + rule.interval, currentDate.month, currentDate.day);
     }
   }
 
@@ -80,16 +70,12 @@ class CompleteRecurringTaskUseCase {
 
     // Check count constraint (this would require tracking occurrence count)
     // For now, we'll skip count-based constraints as it requires additional state
-    
+
     return true;
   }
 
-  Future<void> _createNextOccurrence(
-    entities.Task originalTask,
-    DateTime nextDate,
-    String projectId,
-  ) async {
-    // Create new task for next occurrence
+  Future<void> _createNextOccurrenceWithLinks(entities.Task originalTask, DateTime nextDate, String projectId) async {
+    // Create new task for next occurrence with backward link
     final nextTask = entities.Task(
       id: _generateTaskId(),
       createdAt: DateTime.now(),
@@ -98,35 +84,27 @@ class CompleteRecurringTaskUseCase {
       isCompleted: false,
       description: originalTask.description,
       recurrence: originalTask.recurrence,
+      previousRecurringTaskId: originalTask.id,
     );
+
+    // Add new task to timeline items
+    await _timelineItemsRepository.createTimelineItem(TimelineItem.task(nextTask));
+
+    // Update original task with forward link
+    final updatedOriginalTask = originalTask.copyWith(nextRecurringTaskId: nextTask.id);
+    await _timelineItemsRepository.updateTimelineItem(TimelineItem.task(updatedOriginalTask));
 
     // Create or get the day for next occurrence
-    final nextDay = Day(
-      date: nextDate,
-      projectId: projectId,
-      itemIds: [],
-      updatedAt: DateTime.now(),
-    );
+    final nextDay = Day(date: nextDate, projectId: projectId, itemIds: [], updatedAt: DateTime.now());
 
-    // Add task to timeline items
-    await _timelineItemsRepository.createTimelineItem(
-      TimelineItem.task(nextTask),
-    );
-
-    // Add task to the day - for now, we'll use a simplified approach
-    // since the exact repository methods may vary
+    // Add task to the day
     try {
       // Try to get existing day first
-      final daysResult = await _daysRepository.getDays(
-        projectId: projectId,
-        startDate: nextDate,
-        endDate: nextDate,
-      );
-      
+      final daysResult = await _daysRepository.getDays(projectId: projectId, startDate: nextDate, endDate: nextDate);
+
       await daysResult.fold(
         (failure) async {
           // If getting days failed, we can't proceed
-
           print('Failed to get days for next occurrence: $failure');
         },
         (days) async {

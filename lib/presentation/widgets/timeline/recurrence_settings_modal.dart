@@ -7,13 +7,11 @@ import '../../../domain/entities/recurrence_rule.dart';
 class RecurrenceSettingsModal extends StatefulWidget {
   final RecurrenceRule? initialRecurrence;
   final Function(RecurrenceRule?) onRecurrenceChanged;
-  final VoidCallback? onDismiss;
 
   const RecurrenceSettingsModal({
     super.key,
     this.initialRecurrence,
     required this.onRecurrenceChanged,
-    this.onDismiss,
   });
 
   @override
@@ -93,9 +91,6 @@ class _RecurrenceSettingsModalState extends State<RecurrenceSettingsModal> {
       switch (event.logicalKey) {
         case LogicalKeyboardKey.enter:
           _confirmSelection();
-          break;
-        case LogicalKeyboardKey.escape:
-          widget.onDismiss?.call();
           break;
         case LogicalKeyboardKey.tab:
           if (HardwareKeyboard.instance.isShiftPressed) {

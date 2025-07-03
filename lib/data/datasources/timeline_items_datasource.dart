@@ -6,8 +6,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/timeline_item.dart';
 import '../../domain/entities/task.dart';
 import '../../domain/entities/note.dart';
-import '../../domain/entities/note_type.dart';
-import '../../domain/entities/recurrence_rule.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/logger_service.dart';
 
@@ -150,16 +148,14 @@ class TimelineItemsDataSource {
 
     try {
       final items = <TimelineItem>[];
-      
+
       // Firestore has a limit of 10 items per 'in' query, so we batch them
       const batchSize = 10;
       for (int i = 0; i < itemIds.length; i += batchSize) {
         final batch = itemIds.skip(i).take(batchSize).toList();
-        
-        final querySnapshot = await _timelineItemsCollection
-            .where(FieldPath.documentId, whereIn: batch)
-            .get();
-        
+
+        final querySnapshot = await _timelineItemsCollection.where(FieldPath.documentId, whereIn: batch).get();
+
         for (final doc in querySnapshot.docs) {
           if (doc.exists) {
             try {
@@ -191,26 +187,14 @@ class TimelineItemsDataSource {
 
     switch (type) {
       case 'task':
-        final task = Task(
-          id: data['id'],
-          createdAt: DateTime.parse(data['createdAt']),
-          updatedAt: DateTime.parse(data['updatedAt']),
-          title: data['title'],
-          isCompleted: data['isCompleted'] ?? false,
-          description: data['description'],
-          recurrence: data['recurrence'] != null 
-              ? RecurrenceRule.fromJson(data['recurrence'] as Map<String, dynamic>)
-              : null,
-        );
+        final task = Task.fromJson(data);
         return TimelineItem.task(task);
       case 'note':
-        final note = Note(
-          id: data['id'],
-          createdAt: DateTime.parse(data['createdAt']),
-          updatedAt: DateTime.parse(data['updatedAt']),
-          content: data['content'],
-          type: _parseNoteType(data['noteType']),
-        );
+      case 'text':
+        if (data['type'] == 'note') {
+          data['type'] = 'text';
+        }
+        final note = Note.fromJson(data);
         return TimelineItem.note(note);
       default:
         throw Exception('Unknown timeline item type: $type');
@@ -223,40 +207,7 @@ class TimelineItemsDataSource {
   }
 
   Map<String, dynamic> _mapTimelineItemToData(TimelineItem item) {
-    return item.when(
-      task: (task) => {
-        'id': task.id,
-        'type': 'task',
-        'createdAt': task.createdAt.toIso8601String(),
-        'updatedAt': task.updatedAt.toIso8601String(),
-        'title': task.title,
-        'isCompleted': task.isCompleted,
-        'description': task.description,
-        'recurrence': task.recurrence?.toJson(),
-      },
-      note: (note) => {
-        'id': note.id,
-        'type': 'note',
-        'createdAt': note.createdAt.toIso8601String(),
-        'updatedAt': note.updatedAt.toIso8601String(),
-        'content': note.content,
-        'noteType': note.type.name,
-      },
-    );
-  }
-
-  NoteType _parseNoteType(String? noteType) {
-    switch (noteType) {
-      case 'headline1':
-        return NoteType.headline1;
-      case 'headline2':
-        return NoteType.headline2;
-      case 'headline3':
-        return NoteType.headline3;
-      case 'text':
-      default:
-        return NoteType.text;
-    }
+    return item.when(task: (task) => task.toJson(), note: (note) => note.toJson());
   }
 
   void dispose() {
